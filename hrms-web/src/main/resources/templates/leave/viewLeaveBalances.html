@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Leave Balances</title>
+    <link href="../../static/css/bootstrap.min.css" rel="stylesheet" th:href="@{/css/bootstrap.min.css}">
+    <link href="../../static/css/animate.css" rel="stylesheet" th:href="@{/css/animate.css}">
+    <link href="../../static/css/style.css" rel="stylesheet" th:href="@{/css/style.css}">
+</head>
+<body class="fixed-nav">
+<div id="wrapper">
+    <div th:replace="fragments/template :: side-menu"></div>
+    <div id="page-wrapper" class="gray-bg">
+        <div th:replace="fragments/template :: top-navbar"></div>
+        <div th:replace="fragments/template :: page-heading"></div>
+        <div th:replace="fragments/template :: alerts"></div>
+        <div class="wrapper wrapper-content animated fadeInRight">
+            <div class="row">
+                <div class="col-lg-12">
+                    <div class="ibox">
+                        <div class="ibox-title"><h5>Leave Balances</h5></div>
+                        <div class="ibox-content">
+                            <form method="get" th:action="@{/leave/balances}">
+                                <div class="row">
+                                    <div class="col-md-4 form-group">
+                                        <label>Employee</label>
+                                        <select class="form-control" name="employeeId">
+                                            <option value="">Select Employee</option>
+                                            <option th:each="employee : ${employees}"
+                                                    th:value="${employee.id}"
+                                                    th:selected="${selectedEmployeeId != null && employee.id == selectedEmployeeId}"
+                                                    th:text="${employee.firstName + ' ' + employee.lastName + ' (' + employee.employeeNumber + ')'}">
+                                                Employee
+                                            </option>
+                                        </select>
+                                    </div>
+                                    <div class="col-md-2 form-group d-flex align-items-end">
+                                        <button class="btn btn-primary btn-block" type="submit">View</button>
+                                    </div>
+                                </div>
+                            </form>
+                            <div class="table-responsive">
+                                <table class="table table-striped table-bordered">
+                                    <thead>
+                                    <tr>
+                                        <th>Leave Type</th>
+                                        <th>Accrued</th>
+                                        <th>Used</th>
+                                        <th>Sold</th>
+                                        <th>Available</th>
+                                    </tr>
+                                    </thead>
+                                    <tbody>
+                                    <tr th:each="balance : ${balances}">
+                                        <td th:text="${balance.leaveType}">VACATION</td>
+                                        <td th:text="${balance.accruedDays}">0</td>
+                                        <td th:text="${balance.usedDays}">0</td>
+                                        <td th:text="${balance.soldDays}">0</td>
+                                        <td th:text="${balance.availableDays}">0</td>
+                                    </tr>
+                                    <tr th:if="${#lists.isEmpty(balances)}">
+                                        <td colspan="5" class="text-center">Select an employee to view leave balances.</td>
+                                    </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div th:replace="fragments/template :: footer"></div>
+    </div>
+</div>
+</body>
+</html>

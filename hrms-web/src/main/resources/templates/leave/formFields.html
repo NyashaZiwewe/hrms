@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<body>
+<div th:fragment="leave-form">
+    <div class="row">
+        <div class="col-md-6 form-group">
+            <label>Employee</label>
+            <select class="form-control" th:field="*{employeeId}">
+                <option value="">-- Select Employee --</option>
+                <option th:each="employee : ${employees}" th:value="${employee.id}" th:text="${employee.firstName + ' ' + employee.lastName}">Employee</option>
+            </select>
+        </div>
+        <div class="col-md-6 form-group">
+            <label>Leave Type</label>
+            <select class="form-control" th:field="*{leaveType}">
+                <option value="">-- Select Leave Type --</option>
+                <option th:each="leaveType : ${leaveTypes}" th:value="${leaveType}" th:text="${leaveType}">ANNUAL</option>
+            </select>
+        </div>
+        <div class="col-md-6 form-group">
+            <label>Manager Employee ID</label>
+            <input class="form-control" th:field="*{managerEmployeeId}">
+        </div>
+        <div class="col-md-6 form-group">
+            <label>Manager Assigned</label>
+            <select class="form-control" th:field="*{managerAssigned}">
+                <option th:value="false">No</option>
+                <option th:value="true">Yes</option>
+            </select>
+        </div>
+        <div class="col-md-6 form-group">
+            <label>Start Date</label>
+            <input type="date" class="form-control" th:field="*{startDate}">
+        </div>
+        <div class="col-md-6 form-group">
+            <label>End Date</label>
+            <input type="date" class="form-control" th:field="*{endDate}">
+        </div>
+        <div class="col-md-12 form-group">
+            <label>Reason</label>
+            <textarea class="form-control" th:field="*{reason}"></textarea>
+        </div>
+    </div>
+</div>
+</body>
+</html>

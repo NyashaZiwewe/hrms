@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HRMS</title>
+    <link href="../../static/css/bootstrap.min.css" rel="stylesheet" th:href="@{/css/bootstrap.min.css}">
+    <link href="../../static/css/animate.css" rel="stylesheet" th:href="@{/css/animate.css}">
+    <link href="../../static/css/style.css" rel="stylesheet" th:href="@{/css/style.css}">
+    <link href="../../static/css/dashboard.css" rel="stylesheet" th:href="@{/css/dashboard.css}">
+</head>
+<body class="fixed-nav">
+<div id="wrapper">
+    <nav class="navbar-default navbar-static-side" role="navigation" th:fragment="side-menu">
+        <div class="sidebar-collapse">
+            <ul class="nav metismenu" id="side-menu">
+                <li class="nav-header">
+                    <div class="profile-element text-center">
+                        <img alt="image" class="img-responsive center-block" style="max-height: 64px;"
+                             src="../../static/img/logo.png" th:src="@{'/img/' + ${companyLogo}}"/>
+                        <div class="m-t-sm">
+                            <span class="block font-bold" th:text="${systemName}">HRMS</span>
+                            <small th:text="${companyName}">HRMS</small>
+                        </div>
+                    </div>
+                </li>
+                <li><a th:href="@{/}"><span class="nav-label">Dashboard</span></a></li>
+                <li>
+                    <a href="#"><span class="nav-label">Employees</span><span class="fa arrow"></span></a>
+                    <ul class="nav nav-second-level collapse">
+                        <li><a th:href="@{/employees}">Employee List</a></li>
+                        <li><a th:href="@{/employees/add-employee}">Add Employee</a></li>
+                    </ul>
+                </li>
+                <li>
+                    <a href="#"><span class="nav-label">Leave</span><span class="fa arrow"></span></a>
+                    <ul class="nav nav-second-level collapse">
+                        <li><a th:href="@{/leave}">Leave Requests</a></li>
+                        <li><a th:href="@{/leave/balances}">Leave Balances</a></li>
+                        <li><a th:href="@{/leave/sell-leave}">Sell Leave Days</a></li>
+                        <li><a th:href="@{/leave/overtime-claims}">Overtime Claims</a></li>
+                    </ul>
+                </li>
+                <li>
+                    <a href="#"><span class="nav-label">Payroll</span><span class="fa arrow"></span></a>
+                    <ul class="nav nav-second-level collapse">
+                        <li><a th:href="@{/payroll}">Payroll Runs</a></li>
+                        <li><a th:href="@{/payroll/process-run}">Process Payroll</a></li>
+                        <li><a th:href="@{/payroll/compensation-packages}">Compensation Packages</a></li>
+                        <li><a th:href="@{/payroll/currencies}">Currencies</a></li>
+                        <li><a th:href="@{/payroll/exchange-rates}">Exchange Rates</a></li>
+                    </ul>
+                </li>
+                <li><a th:href="@{/performance}"><span class="nav-label">Performance</span></a></li>
+                <li><a th:href="@{/reports}"><span class="nav-label">Reporting</span></a></li>
+            </ul>
+        </div>
+    </nav>
+
+    <div id="page-wrapper" class="gray-bg">
+        <div class="row border-bottom" th:fragment="top-navbar">
+            <nav class="navbar navbar-static-top" role="navigation" style="margin-bottom: 0">
+                <div class="navbar-header">
+                    <a class="navbar-minimalize minimalize-styl-2 btn btn-success" href="#"><span>Menu</span></a>
+                </div>
+                <ul class="nav navbar-top-links navbar-right">
+                    <li>
+                        <span class="m-r-sm welcome-message" th:text="${systemName}">HRMS</span>
+                    </li>
+                </ul>
+            </nav>
+        </div>
+
+        <div class="row wrapper border-bottom white-bg page-heading" th:fragment="page-heading">
+            <div class="col-lg-12">
+                <h2 th:text="${pageName}">Page</h2>
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item">
+                        <span th:text="${pageDomain}">Domain</span>
+                    </li>
+                    <li class="breadcrumb-item">
+                        <span th:text="${pageName}">Page</span>
+                    </li>
+                    <li class="breadcrumb-item active">
+                        <strong th:text="${pageTitle}">Title</strong>
+                    </li>
+                </ol>
+            </div>
+        </div>
+
+        <div class="wrapper wrapper-content" th:fragment="alerts">
+            <div th:if="${errorMsgs != null}">
+                <div th:each="message : ${errorMsgs}" class="alert alert-danger" th:text="${message}">Error</div>
+            </div>
+            <div th:if="${infoMsgs != null}">
+                <div th:each="message : ${infoMsgs}" class="alert alert-info" th:text="${message}">Info</div>
+            </div>
+        </div>
+
+        <th:block th:fragment="footer">
+            <div class="footer">
+                <div>
+                    <strong>Copyright</strong> <span th:text="${companyName}">HRMS</span>
+                </div>
+            </div>
+
+            <script src="../../static/js/jquery-3.6.0.min.js" th:src="@{/js/jquery-3.6.0.min.js}"></script>
+            <script src="../../static/js/popper.min.js" th:src="@{/js/popper.min.js}"></script>
+            <script src="../../static/js/bootstrap.js" th:src="@{/js/bootstrap.js}"></script>
+            <script src="../../static/js/plugins/metisMenu/jquery.metisMenu.js"
+                    th:src="@{/js/plugins/metisMenu/jquery.metisMenu.js}"></script>
+            <script src="../../static/js/plugins/slimscroll/jquery.slimscroll.min.js"
+                    th:src="@{/js/plugins/slimscroll/jquery.slimscroll.min.js}"></script>
+            <script src="../../static/js/inspinia.js" th:src="@{/js/inspinia.js}"></script>
+        </th:block>
+    </div>
+</div>
+</body>
+</html>

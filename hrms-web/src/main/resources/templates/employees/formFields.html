@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<body>
+<div th:fragment="employee-form">
+    <div class="row">
+        <div class="col-md-6 form-group">
+            <label>Employee Number</label>
+            <input class="form-control" th:field="*{employeeNumber}">
+        </div>
+        <div class="col-md-6 form-group">
+            <label>Email</label>
+            <input class="form-control" th:field="*{email}">
+        </div>
+        <div class="col-md-4 form-group">
+            <label>First Name</label>
+            <input class="form-control" th:field="*{firstName}">
+        </div>
+        <div class="col-md-4 form-group">
+            <label>Middle Name</label>
+            <input class="form-control" th:field="*{middleName}">
+        </div>
+        <div class="col-md-4 form-group">
+            <label>Last Name</label>
+            <input class="form-control" th:field="*{lastName}">
+        </div>
+        <div class="col-md-6 form-group">
+            <label>Department</label>
+            <select class="form-control" th:field="*{departmentId}">
+                <option value="">Select Department</option>
+                <option th:each="department : ${departments}"
+                        th:value="${department.id}"
+                        th:text="${department.name}">
+                    Department
+                </option>
+            </select>
+        </div>
+        <div class="col-md-6 form-group">
+            <label>Employment Type</label>
+            <select class="form-control" th:field="*{employmentTypeId}">
+                <option value="">Select Employment Type</option>
+                <option th:each="employmentType : ${employmentTypes}"
+                        th:value="${employmentType.id}"
+                        th:text="${employmentType.name}">
+                    Employment Type
+                </option>
+            </select>
+        </div>
+        <div class="col-md-6 form-group">
+            <label>Job Title</label>
+            <select class="form-control" th:field="*{jobTitleId}" id="jobTitleId">
+                <option value="">Select Job Title</option>
+                <option th:each="jobTitle : ${jobTitles}"
+                        th:value="${jobTitle.id}"
+                        th:text="${jobTitle.name + ' (' + jobTitle.grade.name + ')'}"
+                        th:attr="data-monthly=${jobTitle.grade.monthlySalary},data-hourly=${jobTitle.grade.hourlyRate}">
+                    Job Title
+                </option>
+            </select>
+        </div>
+        <div class="col-md-4 form-group">
+            <label>Date Joined</label>
+            <input type="date" class="form-control" th:field="*{hireDate}">
+        </div>
+        <div class="col-md-4 form-group">
+            <label>Reports To</label>
+            <select class="form-control" th:field="*{managerEmployeeId}">
+                <option value="">Select Manager</option>
+                <option th:each="manager : ${employees}"
+                        th:if="${employeeId == null || manager.id != employeeId}"
+                        th:value="${manager.id}"
+                        th:text="${manager.employeeNumber + ' - ' + manager.firstName + ' ' + manager.lastName}">
+                    Manager
+                </option>
+            </select>
+        </div>
+        <div class="col-md-4 form-group">
+            <label>Phone Number</label>
+            <input class="form-control" th:field="*{phoneNumber}">
+        </div>
+        <div class="col-md-4 form-group">
+            <label>Currency</label>
+            <input class="form-control" th:field="*{preferredCurrency}">
+        </div>
+        <div class="col-md-4 form-group">
+            <label>Monthly Salary</label>
+            <input class="form-control" th:field="*{monthlySalary}" id="monthlySalary" readonly>
+        </div>
+        <div class="col-md-4 form-group">
+            <label>Hourly Rate</label>
+            <input class="form-control" th:field="*{hourlyRate}" id="hourlyRate" readonly>
+        </div>
+        <div class="col-md-4 form-group">
+            <label>Status</label>
+            <select class="form-control" th:field="*{status}">
+                <option value="ACTIVE">ACTIVE</option>
+                <option value="ON_LEAVE">ON_LEAVE</option>
+                <option value="SUSPENDED">SUSPENDED</option>
+                <option value="TERMINATED">TERMINATED</option>
+            </select>
+        </div>
+        <div class="col-md-12 form-group">
+            <label>Address</label>
+            <textarea class="form-control" th:field="*{address}"></textarea>
+        </div>
+        <div class="col-md-6 form-group">
+            <label>National ID</label>
+            <input class="form-control" th:field="*{nationalId}">
+        </div>
+        <div class="col-md-12 form-group">
+            <label>Qualifications</label>
+            <div id="qualificationRows">
+                <div class="border rounded p-3 mb-3 qualification-row"
+                     th:each="qualification, qualificationStat : *{qualifications}">
+                    <div class="row">
+                        <div class="col-md-3 form-group">
+                            <label>Education Level</label>
+                            <select class="form-control"
+                                    th:field="*{qualifications[__${qualificationStat.index}__].educationLevelId}">
+                                <option value="">Select Education Level</option>
+                                <option th:each="educationLevel : ${educationLevels}"
+                                        th:value="${educationLevel.id}"
+                                        th:text="${educationLevel.name}">
+                                    Education Level
+                                </option>
+                            </select>
+                        </div>
+                        <div class="col-md-3 form-group">
+                            <label>Institution</label>
+                            <select class="form-control"
+                                    th:field="*{qualifications[__${qualificationStat.index}__].institutionId}">
+                                <option value="">Select Institution</option>
+                                <option th:each="institution : ${institutions}"
+                                        th:value="${institution.id}"
+                                        th:text="${institution.name}">
+                                    Institution
+                                </option>
+                            </select>
+                        </div>
+                        <div class="col-md-3 form-group">
+                            <label>Qualification</label>
+                            <input class="form-control"
+                                   th:field="*{qualifications[__${qualificationStat.index}__].qualificationName}">
+                        </div>
+                        <div class="col-md-3 form-group">
+                            <label>Completion Year</label>
+                            <input type="number" class="form-control"
+                                   th:field="*{qualifications[__${qualificationStat.index}__].completionYear}">
+                        </div>
+                        <div class="col-md-10 form-group">
+                            <label>Period Studied</label>
+                            <input class="form-control"
+                                   th:field="*{qualifications[__${qualificationStat.index}__].periodStudied}"
+                                   placeholder="e.g. 2019 - 2022">
+                        </div>
+                        <div class="col-md-2 form-group d-flex align-items-end">
+                            <button type="button" class="btn btn-danger btn-block remove-qualification">Remove</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <button type="button" class="btn btn-outline-primary" id="addQualification">Add Qualification</button>
+        </div>
+    </div>
+</div>
+</body>
+</html>

@@ -1,0 +1,116 @@
+.dashboard-chart {
+    position: relative;
+    height: 280px;
+}
+
+.hero-panel {
+    padding: 34px;
+    border: 0;
+    border-radius: 18px;
+    background: linear-gradient(135deg, #1c77c3, #1ab394);
+    color: #fff;
+    box-shadow: 0 18px 35px rgba(28, 119, 195, 0.18);
+}
+
+.hero-panel .lead {
+    color: rgba(255, 255, 255, 0.88);
+    margin-bottom: 24px;
+}
+
+.hero-kpi {
+    margin-top: 15px;
+    padding: 18px 15px;
+    border-radius: 14px;
+    background: rgba(255, 255, 255, 0.14);
+    text-align: center;
+}
+
+.hero-kpi .hero-value {
+    display: block;
+    font-size: 28px;
+    font-weight: 700;
+    line-height: 1.1;
+}
+
+.hero-kpi .hero-label {
+    display: block;
+    margin-top: 6px;
+    font-size: 12px;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: rgba(255, 255, 255, 0.8);
+}
+
+.metric-panel {
+    border: 0;
+    border-radius: 14px;
+    overflow: hidden;
+    box-shadow: 0 10px 24px rgba(0, 0, 0, 0.06);
+}
+
+.metric-panel .panel-heading {
+    border: 0;
+    font-weight: 600;
+}
+
+.metric-panel .panel-body {
+    padding: 22px 20px;
+}
+
+.metric-icon {
+    display: inline-block;
+    width: 42px;
+    height: 42px;
+    margin-bottom: 12px;
+    border-radius: 12px;
+    line-height: 42px;
+    text-align: center;
+    background: rgba(255, 255, 255, 0.18);
+    font-size: 18px;
+    color: #fff;
+}
+
+.coverage-panel,
+.trend-panel {
+    border: 0;
+    border-radius: 16px;
+    box-shadow: 0 12px 28px rgba(0, 0, 0, 0.06);
+}
+
+.coverage-panel .panel-heading,
+.trend-panel .panel-heading {
+    border-top-left-radius: 16px;
+    border-top-right-radius: 16px;
+    font-weight: 600;
+}
+
+.coverage-amount {
+    margin: 0 0 16px;
+    font-size: 34px;
+    font-weight: 700;
+    color: #1c2b36;
+}
+
+.coverage-card {
+    margin-top: 18px;
+    padding: 14px 16px;
+    border: 1px solid #e7eaec;
+    border-radius: 12px;
+    background: #fbfcfd;
+}
+
+html.theme-dark body .metric-panel,
+html.theme-dark body .coverage-panel,
+html.theme-dark body .trend-panel {
+    box-shadow: 0 16px 32px rgba(0, 0, 0, 0.22);
+}
+
+html.theme-dark body .coverage-amount {
+    color: #f3f6ff;
+}
+
+html.theme-dark body .coverage-card {
+    border-color: #456074;
+    background: #314d60;
+    color: #f3f7fb;
+}

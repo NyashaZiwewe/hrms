@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HRMS Dashboard</title>
+    <link href="../static/css/bootstrap.min.css" rel="stylesheet" th:href="@{/css/bootstrap.min.css}">
+    <link href="../static/css/animate.css" rel="stylesheet" th:href="@{/css/animate.css}">
+    <link href="../static/css/style.css" rel="stylesheet" th:href="@{/css/style.css}">
+    <link href="../static/css/dashboard.css" rel="stylesheet" th:href="@{/css/dashboard.css}">
+</head>
+<body class="fixed-nav">
+<div id="wrapper">
+    <div th:replace="fragments/template :: side-menu"></div>
+    <div id="page-wrapper" class="gray-bg">
+        <div th:replace="fragments/template :: top-navbar"></div>
+        <div th:replace="fragments/template :: alerts"></div>
+        <div class="wrapper wrapper-content animated fadeInRight">
+            <div class="row">
+                <div class="col-lg-12">
+                    <div class="hero-panel">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <p class="text-uppercase" style="font-size: 12px; letter-spacing: 0.08em; margin-bottom: 10px;">Human Resources Command Center</p>
+                                <h2 style="margin-top: 0; margin-bottom: 12px; font-size: 36px;">HRMS Dashboard</h2>
+                                <p class="lead">Operational overview across employee management, leave, payroll, performance, and reporting.</p>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="row">
+                                    <div class="col-sm-4">
+                                        <div class="hero-kpi">
+                                            <span class="hero-value" th:text="${#lists.size(dashboard.dashboards)}">0</span>
+                                            <span class="hero-label">Dashboards</span>
+                                        </div>
+                                    </div>
+                                    <div class="col-sm-4">
+                                        <div class="hero-kpi">
+                                            <span class="hero-value">5</span>
+                                            <span class="hero-label">Core Modules</span>
+                                        </div>
+                                    </div>
+                                    <div class="col-sm-4">
+                                        <div class="hero-kpi">
+                                            <span class="hero-value" th:text="${localDate}">2026-03-29</span>
+                                            <span class="hero-label">Today</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="row">
+                <div class="col-lg-3 col-sm-6">
+                    <a class="panel-link" th:href="@{/employees}">
+                        <div class="panel panel-primary metric-panel">
+                            <div class="panel-heading">Employees</div>
+                            <div class="panel-body">
+                                <h3 class="no-margins">Profiles</h3>
+                                <small>Master employee records and lifecycle data</small>
+                            </div>
+                        </div>
+                    </a>
+                </div>
+                <div class="col-lg-3 col-sm-6">
+                    <a class="panel-link" th:href="@{/leave}">
+                        <div class="panel panel-success metric-panel">
+                            <div class="panel-heading">Leave</div>
+                            <div class="panel-body">
+                                <h3 class="no-margins">Workflow</h3>
+                                <small>Requests, balances, approval visibility</small>
+                            </div>
+                        </div>
+                    </a>
+                </div>
+                <div class="col-lg-3 col-sm-6">
+                    <a class="panel-link" th:href="@{/payroll}">
+                        <div class="panel panel-info metric-panel">
+                            <div class="panel-heading">Payroll</div>
+                            <div class="panel-body">
+                                <h3 class="no-margins">Runs</h3>
+                                <small>Compensation, runs, statutory summaries</small>
+                            </div>
+                        </div>
+                    </a>
+                </div>
+                <div class="col-lg-3 col-sm-6">
+                    <a class="panel-link" th:href="@{/performance}">
+                        <div class="panel panel-warning metric-panel">
+                            <div class="panel-heading">Performance</div>
+                            <div class="panel-body">
+                                <h3 class="no-margins">Contracts</h3>
+                                <small>Goals, reviews, development planning</small>
+                            </div>
+                        </div>
+                    </a>
+                </div>
+            </div>
+            <div class="row" th:each="roleDashboard : ${dashboard.dashboards}">
+                <div class="col-lg-12">
+                    <div class="panel panel-default">
+                        <div class="panel-heading" th:text="${roleDashboard.audience}">Audience</div>
+                        <div class="panel-body">
+                            <div class="row">
+                                <div class="col-lg-3 col-sm-6" th:each="metric : ${roleDashboard.metrics}">
+                                    <div class="panel panel-default">
+                                        <div class="panel-heading" th:text="${metric.metric}">Metric</div>
+                                        <div class="panel-body">
+                                            <h3 class="no-margins" th:text="${metric.value}">0</h3>
+                                            <small th:text="${metric.description}">Description</small>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div th:replace="fragments/template :: footer"></div>
+    </div>
+</div>
+</body>
+</html>

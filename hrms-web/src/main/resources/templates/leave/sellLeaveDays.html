@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sell Leave Days</title>
+    <link href="../../static/css/bootstrap.min.css" rel="stylesheet" th:href="@{/css/bootstrap.min.css}">
+    <link href="../../static/css/animate.css" rel="stylesheet" th:href="@{/css/animate.css}">
+    <link href="../../static/css/style.css" rel="stylesheet" th:href="@{/css/style.css}">
+</head>
+<body class="fixed-nav">
+<div id="wrapper">
+    <div th:replace="fragments/template :: side-menu"></div>
+    <div id="page-wrapper" class="gray-bg">
+        <div th:replace="fragments/template :: top-navbar"></div>
+        <div th:replace="fragments/template :: page-heading"></div>
+        <div th:replace="fragments/template :: alerts"></div>
+        <div class="wrapper wrapper-content animated fadeInRight">
+            <div class="row">
+                <div class="col-lg-12">
+                    <div class="ibox">
+                        <div class="ibox-title"><h5>Sell Leave Days</h5></div>
+                        <div class="ibox-content">
+                            <form th:action="@{/leave/save-leave-sale}" method="post" th:object="${leaveSaleRequestInput}">
+                                <div class="row">
+                                    <div class="col-md-4 form-group">
+                                        <label>Employee</label>
+                                        <select class="form-control" th:field="*{employeeId}">
+                                            <option value="">Select Employee</option>
+                                            <option th:each="employee : ${employees}" th:value="${employee.id}" th:text="${employee.firstName + ' ' + employee.lastName}">Employee</option>
+                                        </select>
+                                    </div>
+                                    <div class="col-md-4 form-group">
+                                        <label>Leave Type</label>
+                                        <select class="form-control" th:field="*{leaveType}">
+                                            <option value="">Select Leave Type</option>
+                                            <option th:each="leaveType : ${leaveTypes}" th:value="${leaveType}" th:text="${leaveType}">Type</option>
+                                        </select>
+                                    </div>
+                                    <div class="col-md-4 form-group">
+                                        <label>Days To Sell</label>
+                                        <input type="number" min="1" class="form-control" th:field="*{daysToSell}">
+                                    </div>
+                                    <div class="col-md-12 form-group">
+                                        <label>Reason</label>
+                                        <input class="form-control" th:field="*{reason}">
+                                    </div>
+                                </div>
+                                <div class="text-right">
+                                    <button class="btn btn-success" type="submit">Submit Leave Sale</button>
+                                </div>
+                            </form>
+                            <hr>
+                            <div class="table-responsive">
+                                <table class="table table-striped table-bordered table-hover">
+                                    <thead>
+                                    <tr>
+                                        <th>Employee</th>
+                                        <th>Type</th>
+                                        <th>Days</th>
+                                        <th>Request Date</th>
+                                        <th>Status</th>
+                                        <th>Reason</th>
+                                        <th>Decision</th>
+                                    </tr>
+                                    </thead>
+                                    <tbody>
+                                    <tr th:each="leaveSaleRequest : ${leaveSaleRequests}">
+                                        <td th:text="${leaveSaleRequest.employee.firstName + ' ' + leaveSaleRequest.employee.lastName}">Employee</td>
+                                        <td th:text="${leaveSaleRequest.leaveType}">VACATION</td>
+                                        <td th:text="${leaveSaleRequest.daysToSell}">0</td>
+                                        <td th:text="${leaveSaleRequest.requestDate}">2026-01-01</td>
+                                        <td th:text="${leaveSaleRequest.status}">PENDING</td>
+                                        <td th:text="${leaveSaleRequest.reason}">Reason</td>
+                                        <td>
+                                            <form th:if="${leaveSaleRequest.status.name() == 'PENDING'}"
+                                                  th:action="@{'/leave/decide-leave-sale/' + ${leaveSaleRequest.id}}"
+                                                  method="post"
+                                                  class="form-inline">
+                                                <input name="managerEmployeeId" class="form-control form-control-sm m-r-sm" placeholder="Manager ID">
+                                                <select name="status" class="form-control form-control-sm m-r-sm">
+                                                    <option value="APPROVED">APPROVED</option>
+                                                    <option value="REJECTED">REJECTED</option>
+                                                </select>
+                                                <button class="btn btn-primary btn-sm" type="submit">Submit</button>
+                                            </form>
+                                        </td>
+                                    </tr>
+                                    <tr th:if="${#lists.isEmpty(leaveSaleRequests)}">
+                                        <td colspan="7" class="text-center">No leave sale requests available.</td>
+                                    </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div th:replace="fragments/template :: footer"></div>
+    </div>
+</div>
+</body>
+</html>

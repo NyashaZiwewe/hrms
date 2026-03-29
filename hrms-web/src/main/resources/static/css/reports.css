@@ -1,0 +1,70 @@
+.report-hero {
+    margin-bottom: 24px;
+    padding: 28px 30px;
+    border-radius: 18px;
+    background: #ffffff;
+    box-shadow: 0 12px 28px rgba(0, 0, 0, 0.06);
+}
+
+.report-scope-box {
+    margin-top: 10px;
+    border: 0;
+    border-radius: 14px;
+    background: #f4f8fb;
+}
+
+.report-toolbar {
+    padding: 18px;
+    border-radius: 14px;
+    background: #f8fafc;
+}
+
+.report-metric {
+    border: 0;
+    border-radius: 14px;
+    box-shadow: 0 10px 24px rgba(0, 0, 0, 0.06);
+}
+
+.report-metric .panel-body {
+    padding: 24px 22px;
+}
+
+.report-metric-icon {
+    width: 44px;
+    height: 44px;
+    margin-bottom: 12px;
+    border-radius: 12px;
+    background: rgba(255, 255, 255, 0.18);
+    line-height: 44px;
+    text-align: center;
+    font-size: 18px;
+    color: #fff;
+}
+
+.report-chart {
+    position: relative;
+    height: 320px;
+}
+
+.report-chart-sm {
+    height: 280px;
+}
+
+html.theme-dark body .report-hero,
+html.theme-dark body .report-scope-box,
+html.theme-dark body .report-toolbar,
+html.theme-dark body .report-metric {
+    background: #2c4557;
+    color: #f3f7fb;
+    box-shadow: 0 16px 32px rgba(0, 0, 0, 0.22);
+}
+
+@media print {
+    .report-toolbar,
+    .navbar,
+    .navbar-static-side,
+    .footer,
+    .minimalize-styl-2 {
+        display: none !important;
+    }
+}

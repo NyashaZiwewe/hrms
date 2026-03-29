@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<body>
+<div th:fragment="package-form">
+    <div class="row">
+        <div class="col-md-6 form-group">
+            <label>Employee</label>
+            <select class="form-control" th:field="*{employeeId}">
+                <option value="">-- Select Employee --</option>
+                <option th:each="employee : ${employees}" th:value="${employee.id}" th:text="${employee.firstName + ' ' + employee.lastName}">Employee</option>
+            </select>
+        </div>
+        <div class="col-md-6 form-group">
+            <label>Currency</label>
+            <select class="form-control" th:field="*{currencyCode}">
+                <option value="">-- Select Currency --</option>
+                <option th:each="currency : ${currencies}"
+                        th:value="${currency.code}"
+                        th:text="${currency.code + ' - ' + currency.name + (currency.baseCurrency ? ' (Base)' : '')}">Currency</option>
+            </select>
+        </div>
+        <div class="col-md-4 form-group"><label>Base Salary</label><input class="form-control" th:field="*{baseMonthlySalary}"></div>
+        <div class="col-md-4 form-group"><label>Hourly Rate</label><input class="form-control" th:field="*{hourlyRate}"></div>
+        <div class="col-md-4 form-group"><label>Monthly Hours</label><input class="form-control" th:field="*{standardMonthlyHours}"></div>
+        <div class="col-md-4 form-group"><label>Income Tax Rate</label><input class="form-control" th:field="*{incomeTaxRate}"></div>
+        <div class="col-md-4 form-group"><label>Social Security Rate</label><input class="form-control" th:field="*{socialSecurityRate}"></div>
+        <div class="col-md-4 form-group"><label>Retirement Rate</label><input class="form-control" th:field="*{retirementContributionRate}"></div>
+        <div class="col-md-6 form-group"><label>Benefits Deduction</label><input class="form-control" th:field="*{fixedBenefitsDeduction}"></div>
+        <div class="col-md-6 form-group"><label>Fixed Allowance</label><input class="form-control" th:field="*{fixedAllowance}"></div>
+    </div>
+</div>
+</body>
+</html>

@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>View Contract</title>
+    <link href="../../static/css/bootstrap.min.css" rel="stylesheet" th:href="@{/css/bootstrap.min.css}">
+    <link href="../../static/css/animate.css" rel="stylesheet" th:href="@{/css/animate.css}">
+    <link href="../../static/css/style.css" rel="stylesheet" th:href="@{/css/style.css}">
+</head>
+<body class="fixed-nav">
+<div id="wrapper">
+    <div th:replace="fragments/template :: side-menu"></div>
+    <div id="page-wrapper" class="gray-bg">
+        <div th:replace="fragments/template :: top-navbar"></div>
+        <div th:replace="fragments/template :: page-heading"></div>
+        <div th:replace="fragments/template :: alerts"></div>
+        <div class="wrapper wrapper-content animated fadeInRight">
+            <div class="ibox">
+                <div class="ibox-title">
+                    <h5 th:text="${contract.title}">Contract</h5>
+                    <div class="ibox-tools">
+                        <a class="btn btn-success btn-sm" th:href="@{'/performance/add-goal/' + ${contract.id}}">Add Goal</a>
+                        <a class="btn btn-primary btn-sm" th:href="@{'/performance/self-review/' + ${contract.id}}">Self Review</a>
+                        <a class="btn btn-info btn-sm" th:href="@{'/performance/manager-review/' + ${contract.id}}">Manager Review</a>
+                        <a class="btn btn-default btn-sm" th:href="@{'/performance/add-action-plan/' + ${contract.id}}">Action Plan</a>
+                        <a class="btn btn-warning btn-sm" th:href="@{'/performance/add-improvement-plan/' + ${contract.employee.id}}">Improvement Plan</a>
+                    </div>
+                </div>
+                <div class="ibox-content">
+                    <div class="row">
+                        <div class="col-md-4"><strong>Employee:</strong> <span th:text="${contract.employee.firstName + ' ' + contract.employee.lastName}">Employee</span></div>
+                        <div class="col-md-4"><strong>Status:</strong> <span th:text="${contract.status}">IN_PROGRESS</span></div>
+                        <div class="col-md-4"><strong>Agreed Score:</strong> <span th:text="${contract.agreedScore}">0</span></div>
+                    </div>
+                    <hr>
+                    <h4>Goals</h4>
+                    <table class="table table-striped table-bordered">
+                        <thead><tr><th>Name</th><th>Perspective</th><th>Weight</th><th>Self</th><th>Manager</th><th>Agreed</th></tr></thead>
+                        <tbody>
+                        <tr th:each="goal : ${goals}">
+                            <td th:text="${goal.name}">Goal</td>
+                            <td th:text="${goal.perspective.name}">Perspective</td>
+                            <td th:text="${goal.allocatedWeight}">0</td>
+                            <td th:text="${goal.selfScore}">0</td>
+                            <td th:text="${goal.managerScore}">0</td>
+                            <td th:text="${goal.agreedScore}">0</td>
+                        </tr>
+                        </tbody>
+                    </table>
+                    <h4>Action Plans</h4>
+                    <table class="table table-striped table-bordered">
+                        <thead><tr><th>Name</th><th>Status</th><th>Progress</th></tr></thead>
+                        <tbody>
+                        <tr th:each="plan : ${actionPlans}">
+                            <td th:text="${plan.name}">Plan</td>
+                            <td th:text="${plan.status}">OPEN</td>
+                            <td th:text="${plan.progress}">0</td>
+                        </tr>
+                        </tbody>
+                    </table>
+                    <h4>Improvement Plans</h4>
+                    <table class="table table-striped table-bordered">
+                        <thead><tr><th>Target Area</th><th>Status</th><th>Progress</th></tr></thead>
+                        <tbody>
+                        <tr th:each="plan : ${improvementPlans}">
+                            <td th:text="${plan.targetArea}">Area</td>
+                            <td th:text="${plan.status}">OPEN</td>
+                            <td th:text="${plan.progress}">0</td>
+                        </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+        <div th:replace="fragments/template :: footer"></div>
+    </div>
+</div>
+</body>
+</html>

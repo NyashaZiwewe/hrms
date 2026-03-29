@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Employees</title>
+    <link href="../../static/css/bootstrap.min.css" rel="stylesheet" th:href="@{/css/bootstrap.min.css}">
+    <link href="../../static/css/animate.css" rel="stylesheet" th:href="@{/css/animate.css}">
+    <link href="../../static/css/style.css" rel="stylesheet" th:href="@{/css/style.css}">
+</head>
+<body class="fixed-nav">
+<div id="wrapper">
+    <div th:replace="fragments/template :: side-menu"></div>
+    <div id="page-wrapper" class="gray-bg">
+        <div th:replace="fragments/template :: top-navbar"></div>
+        <div th:replace="fragments/template :: page-heading"></div>
+        <div th:replace="fragments/template :: alerts"></div>
+        <div class="wrapper wrapper-content animated fadeInRight">
+            <div class="row">
+                <div class="col-lg-12">
+                    <div class="ibox">
+                        <div class="ibox-title">
+                            <h5>Employee Profiles</h5>
+                            <div class="ibox-tools">
+                                <a class="btn btn-success btn-sm" th:href="@{/employees/add-employee}">Add Employee</a>
+                            </div>
+                        </div>
+                        <div class="ibox-content">
+                            <div class="table-responsive">
+                                <table class="table table-striped table-bordered table-hover">
+                                    <thead>
+                                    <tr>
+                                        <th>Employee No.</th>
+                                        <th>Name</th>
+                                        <th>Department</th>
+                                        <th>Job Title</th>
+                                        <th>Status</th>
+                                        <th>Currency</th>
+                                        <th></th>
+                                    </tr>
+                                    </thead>
+                                    <tbody>
+                                    <tr th:each="employee : ${employees}">
+                                        <td th:text="${employee.employeeNumber}">EMP001</td>
+                                        <td th:text="${employee.firstName + ' ' + employee.lastName}">Employee</td>
+                                        <td th:text="${employee.department != null ? employee.department.name : ''}">HR</td>
+                                        <td th:text="${employee.jobTitle != null ? employee.jobTitle.name : ''}">Officer</td>
+                                        <td th:text="${employee.status}">ACTIVE</td>
+                                        <td th:text="${employee.preferredCurrency}">USD</td>
+                                        <td><a class="btn btn-primary btn-sm" th:href="@{'/employees/view-employee/' + ${employee.id}}">View</a></td>
+                                    </tr>
+                                    <tr th:if="${#lists.isEmpty(employees)}">
+                                        <td colspan="7" class="text-center">No employee records available.</td>
+                                    </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div th:replace="fragments/template :: footer"></div>
+    </div>
+</div>
+</body>
+</html>
