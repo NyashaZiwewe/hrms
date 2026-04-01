@@ -8,12 +8,14 @@ import hrms.performance.dto.PerformanceImprovementPlanRequest;
 import hrms.performance.dto.PerformanceReviewRequest;
 import hrms.performance.dto.PerspectiveRequest;
 import hrms.performance.dto.ReportingPeriodRequest;
+import hrms.performance.dto.StrategicObjectiveRequest;
 import hrms.performance.entity.ActionPlan;
 import hrms.performance.entity.PerformanceContract;
 import hrms.performance.entity.PerformanceGoal;
 import hrms.performance.entity.PerformanceImprovementPlan;
 import hrms.performance.entity.Perspective;
 import hrms.performance.entity.ReportingPeriod;
+import hrms.performance.entity.StrategicObjective;
 import hrms.performance.service.PerformanceManagementService;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -57,6 +59,22 @@ public class PerformanceResource {
     @GetMapping("/perspectives")
     public List<Perspective> perspectives() {
         return performanceManagementService.perspectives();
+    }
+
+    @PostMapping("/strategic-objectives")
+    @ResponseStatus(HttpStatus.CREATED)
+    public StrategicObjective createStrategicObjective(@Valid @RequestBody StrategicObjectiveRequest request) {
+        return performanceManagementService.createStrategicObjective(request);
+    }
+
+    @GetMapping("/strategic-objectives")
+    public List<StrategicObjective> strategicObjectives() {
+        return performanceManagementService.strategicObjectives();
+    }
+
+    @GetMapping("/reporting-periods/{reportingPeriodId}/strategic-objectives")
+    public List<StrategicObjective> strategicObjectives(@PathVariable Long reportingPeriodId) {
+        return performanceManagementService.strategicObjectives(reportingPeriodId);
     }
 
     @PostMapping("/contracts")

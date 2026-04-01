@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>View Reporting Periods</title>
+    <link href="../../static/css/bootstrap.min.css" rel="stylesheet" th:href="@{/css/bootstrap.min.css}">
+    <link href="../../static/css/animate.css" rel="stylesheet" th:href="@{/css/animate.css}">
+    <link href="../../static/css/style.css" rel="stylesheet" th:href="@{/css/style.css}">
+</head>
+<body class="fixed-nav">
+<div id="wrapper">
+    <div th:replace="fragments/template :: side-menu"></div>
+    <div id="page-wrapper" class="gray-bg">
+        <div th:replace="fragments/template :: top-navbar"></div>
+        <div th:replace="fragments/template :: page-heading"></div>
+        <div th:replace="fragments/template :: alerts"></div>
+        <div class="wrapper wrapper-content animated fadeInRight">
+            <div class="ibox">
+                <div class="ibox-title">
+                    <h5>Reporting Periods</h5>
+                    <div class="ibox-tools">
+                        <a class="btn btn-success btn-sm" th:href="@{/performance/reporting-periods/add}">Add Reporting Period</a>
+                    </div>
+                </div>
+                <div class="ibox-content">
+                    <table class="table table-striped table-bordered">
+                        <thead>
+                        <tr>
+                            <th>Name</th>
+                            <th>Date Range</th>
+                            <th>Status</th>
+                            <th>Actions</th>
+                        </tr>
+                        </thead>
+                        <tbody>
+                        <tr th:each="period : ${reportingPeriods}">
+                            <td th:text="${period.name}">2026</td>
+                            <td th:text="${period.startDate + ' to ' + period.endDate}">Range</td>
+                            <td th:text="${period.active ? 'ACTIVE' : 'INACTIVE'}">ACTIVE</td>
+                            <td>
+                                <a class="btn btn-primary btn-sm" th:href="@{'/performance/reporting-periods/' + ${period.id}}">View</a>
+                                <a class="btn btn-success btn-sm" th:href="@{'/performance/reporting-periods/' + ${period.id} + '/edit'}">Edit</a>
+                                <form th:action="@{'/performance/reporting-periods/' + ${period.id} + '/delete'}"
+                                      method="post" style="display:inline-block">
+                                    <button class="btn btn-danger btn-sm" type="submit">Delete</button>
+                                </form>
+                            </td>
+                        </tr>
+                        <tr th:if="${#lists.isEmpty(reportingPeriods)}">
+                            <td colspan="4" class="text-center">No reporting periods configured.</td>
+                        </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+        <div th:replace="fragments/template :: footer"></div>
+    </div>
+</div>
+</body>
+</html>

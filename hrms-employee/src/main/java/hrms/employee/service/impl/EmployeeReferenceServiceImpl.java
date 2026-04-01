@@ -60,6 +60,17 @@ public class EmployeeReferenceServiceImpl implements EmployeeReferenceService {
         return departmentRepository.save(department);
     }
 
+    public Department updateDepartment(Long id, DepartmentRequest request) {
+        Department department = findDepartment(id);
+        departmentRepository.findByNameIgnoreCase(request.getName())
+                .filter(existing -> !existing.getId().equals(id))
+                .ifPresent(existing -> {
+                    throw new DuplicateResourceException("Department already exists: " + request.getName());
+                });
+        department.setName(request.getName().trim());
+        return departmentRepository.save(department);
+    }
+
     @Transactional(readOnly = true)
     public List<Department> departments() {
         return departmentRepository.findAll();
@@ -109,6 +120,18 @@ public class EmployeeReferenceServiceImpl implements EmployeeReferenceService {
         return jobTitleRepository.save(jobTitle);
     }
 
+    public JobTitle updateJobTitle(Long id, JobTitleRequest request) {
+        JobTitle jobTitle = findJobTitle(id);
+        jobTitleRepository.findByNameIgnoreCase(request.getName())
+                .filter(existing -> !existing.getId().equals(id))
+                .ifPresent(existing -> {
+                    throw new DuplicateResourceException("Job title already exists: " + request.getName());
+                });
+        jobTitle.setName(request.getName().trim());
+        jobTitle.setGrade(findGrade(request.getGradeId()));
+        return jobTitleRepository.save(jobTitle);
+    }
+
     @Transactional(readOnly = true)
     public List<JobTitle> jobTitles() {
         return jobTitleRepository.findAll();
@@ -135,6 +158,17 @@ public class EmployeeReferenceServiceImpl implements EmployeeReferenceService {
         return educationLevelRepository.save(educationLevel);
     }
 
+    public EducationLevel updateEducationLevel(Long id, EducationLevelRequest request) {
+        EducationLevel educationLevel = findEducationLevel(id);
+        educationLevelRepository.findByNameIgnoreCase(request.getName())
+                .filter(existing -> !existing.getId().equals(id))
+                .ifPresent(existing -> {
+                    throw new DuplicateResourceException("Education level already exists: " + request.getName());
+                });
+        educationLevel.setName(request.getName().trim());
+        return educationLevelRepository.save(educationLevel);
+    }
+
     @Transactional(readOnly = true)
     public List<EducationLevel> educationLevels() {
         return educationLevelRepository.findAll();
@@ -151,6 +185,17 @@ public class EmployeeReferenceServiceImpl implements EmployeeReferenceService {
             throw new DuplicateResourceException("Employment type already exists: " + request.getName());
         });
         EmploymentType employmentType = new EmploymentType();
+        employmentType.setName(request.getName().trim());
+        return employmentTypeRepository.save(employmentType);
+    }
+
+    public EmploymentType updateEmploymentType(Long id, EmploymentTypeRequest request) {
+        EmploymentType employmentType = findEmploymentType(id);
+        employmentTypeRepository.findByNameIgnoreCase(request.getName())
+                .filter(existing -> !existing.getId().equals(id))
+                .ifPresent(existing -> {
+                    throw new DuplicateResourceException("Employment type already exists: " + request.getName());
+                });
         employmentType.setName(request.getName().trim());
         return employmentTypeRepository.save(employmentType);
     }

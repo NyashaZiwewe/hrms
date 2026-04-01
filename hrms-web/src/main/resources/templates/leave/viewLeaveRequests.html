@@ -22,10 +22,17 @@
                         <div class="ibox-title">
                             <h5>Leave Requests</h5>
                             <div class="ibox-tools">
-                                <a class="btn btn-success btn-sm" th:href="@{/leave/add-request}">Add Request</a>
+                                <a class="btn btn-primary btn-sm" th:href="@{/leave/types}">Leave Types</a>
                             </div>
                         </div>
                         <div class="ibox-content">
+                            <form th:action="@{/leave/save-request}" method="post" th:object="${leaveRequestInput}">
+                                <div th:replace="leave/formFields :: leave-form"></div>
+                                <div class="text-right">
+                                    <button class="btn btn-success" type="submit">Save Leave Request</button>
+                                </div>
+                            </form>
+                            <hr>
                             <div class="table-responsive">
                                 <table class="table table-striped table-bordered table-hover">
                                     <thead>
@@ -41,7 +48,7 @@
                                     <tbody>
                                     <tr th:each="leaveRequest : ${leaveRequests}">
                                         <td th:text="${leaveRequest.employee.firstName + ' ' + leaveRequest.employee.lastName}">Employee</td>
-                                        <td th:text="${leaveRequest.leaveType}">VACATION</td>
+                                        <td th:text="${leaveRequest.leaveType.name}">Vacation Leave</td>
                                         <td th:text="${leaveRequest.startDate + ' to ' + leaveRequest.endDate}">Period</td>
                                         <td th:text="${leaveRequest.daysRequested}">0</td>
                                         <td th:text="${leaveRequest.status}">PENDING</td>

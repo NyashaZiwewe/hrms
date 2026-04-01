@@ -7,6 +7,7 @@
     <link href="../../static/css/bootstrap.min.css" rel="stylesheet" th:href="@{/css/bootstrap.min.css}">
     <link href="../../static/css/animate.css" rel="stylesheet" th:href="@{/css/animate.css}">
     <link href="../../static/css/style.css" rel="stylesheet" th:href="@{/css/style.css}">
+    <link href="../../static/css/plugins/datapicker/datepicker3.css" rel="stylesheet" th:href="@{/css/plugins/datapicker/datepicker3.css}">
 </head>
 <body class="fixed-nav">
 <div id="wrapper">
@@ -32,9 +33,9 @@
                                 </select>
                                 <small class="text-muted" th:text="'Base currency: ' + ${baseCurrency.code}">Base currency</small>
                             </div>
-                            <div class="col-md-4 form-group"><label>Pay Date</label><input type="date" class="form-control" th:field="*{payDate}"></div>
-                            <div class="col-md-6 form-group"><label>Period Start</label><input type="date" class="form-control" th:field="*{periodStart}"></div>
-                            <div class="col-md-6 form-group"><label>Period End</label><input type="date" class="form-control" th:field="*{periodEnd}"></div>
+                            <div class="col-md-4 form-group"><label>Pay Date</label><input type="text" class="form-control js-date-picker" th:field="*{payDate}"></div>
+                            <div class="col-md-6 form-group"><label>Period Start</label><input type="text" class="form-control js-date-picker" th:field="*{periodStart}"></div>
+                            <div class="col-md-6 form-group"><label>Period End</label><input type="text" class="form-control js-date-picker" th:field="*{periodEnd}"></div>
                         </div>
                         <div class="table-responsive">
                             <table class="table table-striped table-bordered">

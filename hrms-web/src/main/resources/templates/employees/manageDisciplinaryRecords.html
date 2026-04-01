@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Manage Disciplinary Records</title>
+    <link href="../../static/css/bootstrap.min.css" rel="stylesheet" th:href="@{/css/bootstrap.min.css}">
+    <link href="../../static/css/animate.css" rel="stylesheet" th:href="@{/css/animate.css}">
+    <link href="../../static/css/style.css" rel="stylesheet" th:href="@{/css/style.css}">
+    <link href="../../static/css/plugins/datapicker/datepicker3.css" rel="stylesheet" th:href="@{/css/plugins/datapicker/datepicker3.css}">
+</head>
+<body class="fixed-nav">
+<div id="wrapper">
+    <div th:replace="fragments/template :: side-menu"></div>
+    <div id="page-wrapper" class="gray-bg">
+        <div th:replace="fragments/template :: top-navbar"></div>
+        <div th:replace="fragments/template :: page-heading"></div>
+        <div th:replace="fragments/template :: alerts"></div>
+        <div class="wrapper wrapper-content animated fadeInRight">
+            <div class="ibox">
+                <div class="ibox-title">
+                    <h5 th:text="${employee.firstName + ' ' + employee.lastName + ' - Disciplinary Records'}">Disciplinary Records</h5>
+                </div>
+                <div class="ibox-content">
+                    <form th:action="@{'/employees/' + ${employee.id} + '/disciplinary-records'}" method="post" th:object="${disciplinaryRecordRequest}">
+                        <div class="row">
+                            <div class="col-md-3 form-group">
+                                <label>Record Type</label>
+                                <select class="form-control" th:field="*{recordType}">
+                                    <option value="">Select Type</option>
+                                    <option th:each="recordType : ${disciplinaryTypes}"
+                                            th:value="${recordType}"
+                                            th:text="${recordType}">
+                                        Type
+                                    </option>
+                                </select>
+                            </div>
+                            <div class="col-md-3 form-group">
+                                <label>Record Date</label>
+                                <input type="text" class="form-control js-date-picker" th:field="*{recordDate}">
+                            </div>
+                            <div class="col-md-3 form-group">
+                                <label>Effective From</label>
+                                <input type="text" class="form-control js-date-picker" th:field="*{effectiveFrom}">
+                            </div>
+                            <div class="col-md-3 form-group">
+                                <label>Effective To</label>
+                                <input type="text" class="form-control js-date-picker" th:field="*{effectiveTo}">
+                            </div>
+                            <div class="col-md-6 form-group">
+                                <label>Subject</label>
+                                <input class="form-control" th:field="*{subject}">
+                            </div>
+                            <div class="col-md-6 form-group">
+                                <label>Outcome</label>
+                                <input class="form-control" th:field="*{outcome}">
+                            </div>
+                            <div class="col-md-12 form-group">
+                                <label>Details</label>
+                                <textarea class="form-control" th:field="*{details}"></textarea>
+                            </div>
+                        </div>
+                        <div class="text-right">
+                            <button class="btn btn-success" type="submit">Add Record</button>
+                        </div>
+                    </form>
+                    <hr>
+                    <div class="table-responsive">
+                        <table class="table table-striped table-bordered">
+                            <thead>
+                            <tr>
+                                <th>Date</th>
+                                <th>Type</th>
+                                <th>Subject</th>
+                                <th>Effective Period</th>
+                                <th>Outcome</th>
+                                <th>Details</th>
+                            </tr>
+                            </thead>
+                            <tbody>
+                            <tr th:each="record : ${disciplinaryRecords}">
+                                <td th:text="${record.recordDate != null ? record.recordDate : ''}">01/01/2026</td>
+                                <td th:text="${record.recordType}">WRITTEN_WARNING</td>
+                                <td th:text="${record.subject}">Late Reporting</td>
+                                <td th:text="${record.effectiveFrom != null || record.effectiveTo != null ? (record.effectiveFrom != null ? record.effectiveFrom : '') + ' to ' + (record.effectiveTo != null ? record.effectiveTo : '') : ''}">
+                                    Period
+                                </td>
+                                <td th:text="${record.outcome}">Warning Issued</td>
+                                <td th:text="${record.details}">Details</td>
+                            </tr>
+                            <tr th:if="${#lists.isEmpty(disciplinaryRecords)}">
+                                <td colspan="6" class="text-center">No disciplinary records recorded.</td>
+                            </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    <div class="text-right">
+                        <a class="btn btn-warning" th:href="@{'/employees/view-employee/' + ${employee.id}}">Back</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div th:replace="fragments/template :: footer"></div>
+    </div>
+</div>
+</body>
+</html>

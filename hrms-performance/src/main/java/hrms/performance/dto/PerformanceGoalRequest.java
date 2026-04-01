@@ -15,12 +15,10 @@ public class PerformanceGoalRequest {
     private Long contractId;
 
     @NotNull
-    private Long perspectiveId;
+    private Long strategicObjectiveId;
 
     @NotBlank
     private String name;
-
-    private String strategicObjective;
 
     @NotNull
     private BigDecimal allocatedWeight;

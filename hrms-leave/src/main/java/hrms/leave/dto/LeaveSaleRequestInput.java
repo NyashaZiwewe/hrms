@@ -1,6 +1,6 @@
 package hrms.leave.dto;
 
-import hrms.leave.model.LeaveType;
+import com.fasterxml.jackson.annotation.JsonAlias;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -15,7 +15,8 @@ public class LeaveSaleRequestInput {
     private Long employeeId;
 
     @NotNull
-    private LeaveType leaveType;
+    @JsonAlias("leaveType")
+    private String leaveTypeCode;
 
     @NotNull
     @Min(1)

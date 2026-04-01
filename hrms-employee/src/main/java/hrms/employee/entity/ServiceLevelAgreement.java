@@ -12,7 +12,9 @@ import javax.persistence.GeneratedValue;
 import javax.persistence.GenerationType;
 import javax.persistence.Id;
 import javax.persistence.Table;
-import java.time.LocalDate;
+import javax.persistence.Temporal;
+import javax.persistence.TemporalType;
+import java.util.Date;
 
 @Getter
 @Setter
@@ -32,7 +34,8 @@ public class ServiceLevelAgreement {
     private String counterparty;
 
     @Column(nullable = false)
-    private LocalDate signedDate;
+    @Temporal(TemporalType.DATE)
+    private Date signedDate;
 
     @Column(nullable = false)
     private boolean signed;

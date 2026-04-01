@@ -19,9 +19,12 @@ import javax.persistence.Id;
 import javax.persistence.JoinColumn;
 import javax.persistence.ManyToOne;
 import javax.persistence.OneToMany;
+import javax.persistence.OrderBy;
 import javax.persistence.Table;
+import javax.persistence.Temporal;
+import javax.persistence.TemporalType;
 import java.util.ArrayList;
-import java.time.LocalDate;
+import java.util.Date;
 import java.util.List;
 
 @Getter
@@ -54,8 +57,30 @@ public class Employee {
     @Column
     private String phoneNumber;
 
-    @Column(length = 1000)
-    private String address;
+    @OneToMany(mappedBy = "employee", cascade = CascadeType.ALL, orphanRemoval = true)
+    @JsonIgnoreProperties({"employee", "hibernateLazyInitializer", "handler"})
+    private List<EmployeeQualification> qualifications = new ArrayList<EmployeeQualification>();
+
+    @OneToMany(mappedBy = "employee", cascade = CascadeType.ALL, orphanRemoval = true)
+    @JsonIgnoreProperties({"employee", "hibernateLazyInitializer", "handler"})
+    private List<EmployeeDependent> dependents = new ArrayList<EmployeeDependent>();
+
+    @OneToMany(mappedBy = "employee", cascade = CascadeType.ALL, orphanRemoval = true)
+    @JsonIgnoreProperties({"employee", "hibernateLazyInitializer", "handler"})
+    private List<EmployeeDisability> disabilities = new ArrayList<EmployeeDisability>();
+
+    @OneToMany(mappedBy = "employee", cascade = CascadeType.ALL, orphanRemoval = true)
+    @JsonIgnoreProperties({"employee", "hibernateLazyInitializer", "handler"})
+    private List<EmployeeRelatedContact> relatedContacts = new ArrayList<EmployeeRelatedContact>();
+
+    @OneToMany(mappedBy = "employee", cascade = CascadeType.ALL, orphanRemoval = true)
+    @JsonIgnoreProperties({"employee", "hibernateLazyInitializer", "handler"})
+    private List<EmployeeContract> contracts = new ArrayList<EmployeeContract>();
+
+    @OneToMany(mappedBy = "employee", cascade = CascadeType.ALL, orphanRemoval = true)
+    @OrderBy("id DESC")
+    @JsonIgnoreProperties({"employee", "hibernateLazyInitializer", "handler"})
+    private List<EmployeeAddress> addresses = new ArrayList<EmployeeAddress>();
 
     @Column(unique = true)
     private String nationalId;
@@ -82,7 +107,8 @@ public class Employee {
     private EmploymentType employmentType;
 
     @Column(nullable = false)
-    private LocalDate hireDate;
+    @Temporal(TemporalType.DATE)
+    private Date hireDate;
 
     @Column
     private String contractDocumentPath;
@@ -91,7 +117,8 @@ public class Employee {
     private String contractFileName;
 
     @Column
-    private LocalDate terminationDate;
+    @Temporal(TemporalType.DATE)
+    private Date terminationDate;
 
     @Column
     private Long managerEmployeeId;
@@ -104,12 +131,6 @@ public class Employee {
 
     @Column(nullable = false, length = 3)
     private String preferredCurrency = "USD";
-
-    @Column(nullable = false, precision = 14, scale = 2)
-    private java.math.BigDecimal monthlySalary = java.math.BigDecimal.ZERO;
-
-    @Column(nullable = false, precision = 14, scale = 2)
-    private java.math.BigDecimal hourlyRate = java.math.BigDecimal.ZERO;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
@@ -124,23 +145,37 @@ public class Employee {
     @Column(length = 2000)
     private String performanceSummary;
 
-    @OneToMany(mappedBy = "employee", cascade = CascadeType.ALL, orphanRemoval = true)
-    @JsonIgnoreProperties({"employee", "hibernateLazyInitializer", "handler"})
-    private List<EmployeeQualification> qualifications = new ArrayList<EmployeeQualification>();
+    public String getAddress() {
+        return primaryAddress() == null ? null : primaryAddress().getFullAddress();
+    }
 
-    @OneToMany(mappedBy = "employee", cascade = CascadeType.ALL, orphanRemoval = true)
-    @JsonIgnoreProperties({"employee", "hibernateLazyInitializer", "handler"})
-    private List<EmployeeDependent> dependents = new ArrayList<EmployeeDependent>();
+    public String getProvince() {
+        return primaryAddress() == null ? null : primaryAddress().getProvince();
+    }
 
-    @OneToMany(mappedBy = "employee", cascade = CascadeType.ALL, orphanRemoval = true)
-    @JsonIgnoreProperties({"employee", "hibernateLazyInitializer", "handler"})
-    private List<EmployeeDisability> disabilities = new ArrayList<EmployeeDisability>();
+    public String getDistrict() {
+        return primaryAddress() == null ? null : primaryAddress().getDistrict();
+    }
 
-    @OneToMany(mappedBy = "employee", cascade = CascadeType.ALL, orphanRemoval = true)
-    @JsonIgnoreProperties({"employee", "hibernateLazyInitializer", "handler"})
-    private List<EmployeeRelatedContact> relatedContacts = new ArrayList<EmployeeRelatedContact>();
+    public String getStreetAddress() {
+        return primaryAddress() == null ? null : primaryAddress().getStreetAddress();
+    }
 
-    @OneToMany(mappedBy = "employee", cascade = CascadeType.ALL, orphanRemoval = true)
-    @JsonIgnoreProperties({"employee", "hibernateLazyInitializer", "handler"})
-    private List<EmployeeContract> contracts = new ArrayList<EmployeeContract>();
+    public java.math.BigDecimal getMonthlySalary() {
+        if (jobTitle == null || jobTitle.getGrade() == null || jobTitle.getGrade().getMonthlySalary() == null) {
+            return java.math.BigDecimal.ZERO;
+        }
+        return jobTitle.getGrade().getMonthlySalary();
+    }
+
+    public java.math.BigDecimal getHourlyRate() {
+        if (jobTitle == null || jobTitle.getGrade() == null || jobTitle.getGrade().getHourlyRate() == null) {
+            return java.math.BigDecimal.ZERO;
+        }
+        return jobTitle.getGrade().getHourlyRate();
+    }
+
+    private EmployeeAddress primaryAddress() {
+        return addresses == null || addresses.isEmpty() ? null : addresses.get(0);
+    }
 }

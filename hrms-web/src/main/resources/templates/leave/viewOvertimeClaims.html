@@ -7,6 +7,7 @@
     <link href="../../static/css/bootstrap.min.css" rel="stylesheet" th:href="@{/css/bootstrap.min.css}">
     <link href="../../static/css/animate.css" rel="stylesheet" th:href="@{/css/animate.css}">
     <link href="../../static/css/style.css" rel="stylesheet" th:href="@{/css/style.css}">
+    <link href="../../static/css/plugins/datapicker/datepicker3.css" rel="stylesheet" th:href="@{/css/plugins/datapicker/datepicker3.css}">
 </head>
 <body class="fixed-nav">
 <div id="wrapper">
@@ -32,7 +33,7 @@
                                     </div>
                                     <div class="col-md-4 form-group">
                                         <label>Work Date</label>
-                                        <input type="date" class="form-control" th:field="*{workDate}">
+                                        <input type="text" class="form-control js-date-picker" th:field="*{workDate}">
                                     </div>
                                     <div class="col-md-4 form-group">
                                         <label>Hours Claimed</label>
@@ -63,7 +64,7 @@
                                     <tbody>
                                     <tr th:each="overtimeClaim : ${overtimeClaims}">
                                         <td th:text="${overtimeClaim.employee.firstName + ' ' + overtimeClaim.employee.lastName}">Employee</td>
-                                        <td th:text="${overtimeClaim.workDate}">2026-01-01</td>
+                                        <td th:text="${overtimeClaim.workDate != null ? overtimeClaim.workDate : ''}">01/01/2026</td>
                                         <td th:text="${overtimeClaim.hoursClaimed}">2.00</td>
                                         <td th:text="${overtimeClaim.status}">PENDING</td>
                                         <td th:text="${overtimeClaim.reason}">Reason</td>

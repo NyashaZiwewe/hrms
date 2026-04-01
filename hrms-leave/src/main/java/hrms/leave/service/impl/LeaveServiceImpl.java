@@ -1,6 +1,7 @@
 package hrms.leave.service.impl;
 
 import hrms.audit.service.AuditTrailService;
+import hrms.common.exception.DuplicateResourceException;
 import hrms.common.exception.OperationNotAllowedException;
 import hrms.common.exception.ResourceNotFoundException;
 import hrms.common.util.DateUtils;
@@ -9,25 +10,29 @@ import hrms.employee.service.EmployeeService;
 import hrms.leave.dto.LeaveDecisionRequest;
 import hrms.leave.dto.LeaveRequestInput;
 import hrms.leave.dto.LeaveSaleRequestInput;
+import hrms.leave.dto.LeaveTypeRequest;
 import hrms.leave.dto.OvertimeClaimInput;
 import hrms.leave.entity.LeaveBalance;
 import hrms.leave.entity.LeaveRequest;
 import hrms.leave.entity.LeaveSaleRequest;
 import hrms.leave.entity.OvertimeClaim;
 import hrms.leave.model.LeaveStatus;
-import hrms.leave.model.LeaveType;
+import hrms.leave.entity.LeaveType;
 import hrms.leave.repository.LeaveBalanceRepository;
 import hrms.leave.repository.LeaveRequestRepository;
 import hrms.leave.repository.LeaveSaleRequestRepository;
+import hrms.leave.repository.LeaveTypeRepository;
 import hrms.leave.repository.OvertimeClaimRepository;
 import hrms.leave.service.LeaveService;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.time.DayOfWeek;
 import java.time.LocalDate;
-import java.time.temporal.ChronoUnit;
+import java.time.ZoneId;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
 
 @Service
@@ -39,6 +44,7 @@ public class LeaveServiceImpl implements LeaveService {
     private final LeaveBalanceRepository leaveBalanceRepository;
     private final LeaveSaleRequestRepository leaveSaleRequestRepository;
     private final OvertimeClaimRepository overtimeClaimRepository;
+    private final LeaveTypeRepository leaveTypeRepository;
     private final AuditTrailService auditTrailService;
 
     public LeaveServiceImpl(LeaveRequestRepository leaveRequestRepository,
@@ -46,31 +52,42 @@ public class LeaveServiceImpl implements LeaveService {
                         LeaveBalanceRepository leaveBalanceRepository,
                         LeaveSaleRequestRepository leaveSaleRequestRepository,
                         OvertimeClaimRepository overtimeClaimRepository,
+                        LeaveTypeRepository leaveTypeRepository,
                         AuditTrailService auditTrailService) {
         this.leaveRequestRepository = leaveRequestRepository;
         this.employeeService = employeeService;
         this.leaveBalanceRepository = leaveBalanceRepository;
         this.leaveSaleRequestRepository = leaveSaleRequestRepository;
         this.overtimeClaimRepository = overtimeClaimRepository;
+        this.leaveTypeRepository = leaveTypeRepository;
         this.auditTrailService = auditTrailService;
     }
 
     public LeaveRequest create(LeaveRequestInput input) {
-        if (input.getEndDate().isBefore(input.getStartDate())) {
+        LocalDate startDate = toLocalDate(input.getStartDate());
+        LocalDate endDate = toLocalDate(input.getEndDate());
+        if (startDate.isBefore(DateUtils.today()) || endDate.isBefore(DateUtils.today())) {
+            throw new IllegalArgumentException("Leave dates cannot be in the past");
+        }
+        if (endDate.isBefore(startDate)) {
             throw new IllegalArgumentException("Leave end date cannot be before start date");
         }
 
         Employee employee = employeeService.findById(input.getEmployeeId());
+        LeaveType leaveType = findLeaveTypeByCode(input.getLeaveTypeCode());
         validateManagerAccess(employee, input.getManagerEmployeeId(), input.isManagerAssigned());
-        LeaveBalance balance = ensureBalance(employee, input.getLeaveType());
-        int requestedDays = (int) ChronoUnit.DAYS.between(input.getStartDate(), input.getEndDate()) + 1;
-        if (requiresBalanceCheck(input.getLeaveType()) && balance.getAvailableDays() < requestedDays) {
-            throw new OperationNotAllowedException("Insufficient leave balance for " + input.getLeaveType());
+        LeaveBalance balance = ensureBalance(employee, leaveType);
+        int requestedDays = workingDaysBetween(startDate, endDate);
+        if (requestedDays <= 0) {
+            throw new IllegalArgumentException("Leave period must include at least one working day");
+        }
+        if (requiresBalanceCheck(leaveType) && balance.getAvailableDays() < requestedDays) {
+            throw new OperationNotAllowedException("Insufficient leave balance for " + leaveType.getName());
         }
 
         LeaveRequest request = new LeaveRequest();
         request.setEmployee(employee);
-        request.setLeaveType(input.getLeaveType());
+        request.setLeaveType(leaveType);
         request.setStartDate(input.getStartDate());
         request.setEndDate(input.getEndDate());
         request.setDaysRequested(requestedDays);
@@ -105,20 +122,29 @@ public class LeaveServiceImpl implements LeaveService {
         if (existing.getStatus() != LeaveStatus.PENDING) {
             throw new OperationNotAllowedException("Only pending leave requests can be updated");
         }
-        if (input.getEndDate().isBefore(input.getStartDate())) {
+        LocalDate startDate = toLocalDate(input.getStartDate());
+        LocalDate endDate = toLocalDate(input.getEndDate());
+        if (startDate.isBefore(DateUtils.today()) || endDate.isBefore(DateUtils.today())) {
+            throw new IllegalArgumentException("Leave dates cannot be in the past");
+        }
+        if (endDate.isBefore(startDate)) {
             throw new IllegalArgumentException("Leave end date cannot be before start date");
         }
 
         Employee employee = employeeService.findById(input.getEmployeeId());
+        LeaveType leaveType = findLeaveTypeByCode(input.getLeaveTypeCode());
         validateManagerAccess(employee, input.getManagerEmployeeId(), input.isManagerAssigned());
-        LeaveBalance balance = ensureBalance(employee, input.getLeaveType());
-        int requestedDays = (int) ChronoUnit.DAYS.between(input.getStartDate(), input.getEndDate()) + 1;
-        if (requiresBalanceCheck(input.getLeaveType()) && balance.getAvailableDays() < requestedDays) {
-            throw new OperationNotAllowedException("Insufficient leave balance for " + input.getLeaveType());
+        LeaveBalance balance = ensureBalance(employee, leaveType);
+        int requestedDays = workingDaysBetween(startDate, endDate);
+        if (requestedDays <= 0) {
+            throw new IllegalArgumentException("Leave period must include at least one working day");
+        }
+        if (requiresBalanceCheck(leaveType) && balance.getAvailableDays() < requestedDays) {
+            throw new OperationNotAllowedException("Insufficient leave balance for " + leaveType.getName());
         }
 
         existing.setEmployee(employee);
-        existing.setLeaveType(input.getLeaveType());
+        existing.setLeaveType(leaveType);
         existing.setStartDate(input.getStartDate());
         existing.setEndDate(input.getEndDate());
         existing.setDaysRequested(requestedDays);
@@ -128,6 +154,53 @@ public class LeaveServiceImpl implements LeaveService {
         auditTrailService.log("LEAVE", "LeaveRequest", String.valueOf(saved.getId()), "UPDATE",
                 "Updated leave request for employee " + employee.getEmployeeNumber());
         return saved;
+    }
+
+    @Transactional(readOnly = true)
+    public List<LeaveType> leaveTypes() {
+        return leaveTypeRepository.findAllByOrderByNameAsc();
+    }
+
+    @Transactional(readOnly = true)
+    public LeaveType leaveType(Long leaveTypeId) {
+        return leaveTypeRepository.findById(leaveTypeId)
+                .orElseThrow(() -> new ResourceNotFoundException("Leave type not found: " + leaveTypeId));
+    }
+
+    public LeaveType createLeaveType(LeaveTypeRequest input) {
+        String code = normalizeCode(input.getCode());
+        String name = normalizeName(input.getName());
+        leaveTypeRepository.findByCodeIgnoreCase(code).ifPresent(existing -> {
+            throw new DuplicateResourceException("Leave type code already exists: " + code);
+        });
+        leaveTypeRepository.findByNameIgnoreCase(name).ifPresent(existing -> {
+            throw new DuplicateResourceException("Leave type name already exists: " + name);
+        });
+        LeaveType leaveType = new LeaveType();
+        applyLeaveType(leaveType, input, code, name);
+        return leaveTypeRepository.save(leaveType);
+    }
+
+    public LeaveType updateLeaveType(Long leaveTypeId, LeaveTypeRequest input) {
+        LeaveType leaveType = leaveType(leaveTypeId);
+        String code = normalizeCode(input.getCode());
+        String name = normalizeName(input.getName());
+        leaveTypeRepository.findByCodeIgnoreCase(code)
+                .filter(existing -> !existing.getId().equals(leaveTypeId))
+                .ifPresent(existing -> {
+                    throw new DuplicateResourceException("Leave type code already exists: " + code);
+                });
+        leaveTypeRepository.findByNameIgnoreCase(name)
+                .filter(existing -> !existing.getId().equals(leaveTypeId))
+                .ifPresent(existing -> {
+                    throw new DuplicateResourceException("Leave type name already exists: " + name);
+                });
+        applyLeaveType(leaveType, input, code, name);
+        return leaveTypeRepository.save(leaveType);
+    }
+
+    public void deleteLeaveType(Long leaveTypeId) {
+        leaveTypeRepository.delete(leaveType(leaveTypeId));
     }
 
     public LeaveRequest decide(Long leaveId, LeaveDecisionRequest decisionRequest) {
@@ -150,7 +223,7 @@ public class LeaveServiceImpl implements LeaveService {
         }
         leaveRequest.setStatus(decisionRequest.getStatus());
         leaveRequest.setDecidedByManagerId(decisionRequest.getManagerEmployeeId());
-        leaveRequest.setDecisionDate(DateUtils.today());
+        leaveRequest.setDecisionDate(new Date());
         LeaveRequest saved = leaveRequestRepository.save(leaveRequest);
         auditTrailService.log("LEAVE", "LeaveRequest", String.valueOf(saved.getId()), "DECIDE",
                 "Manager decision " + saved.getStatus() + " for employee " + saved.getEmployee().getEmployeeNumber());
@@ -173,7 +246,7 @@ public class LeaveServiceImpl implements LeaveService {
     public List<LeaveBalance> balances(Long employeeId) {
         Employee employee = employeeService.findById(employeeId);
         List<LeaveBalance> balances = new ArrayList<LeaveBalance>();
-        for (LeaveType leaveType : LeaveType.values()) {
+        for (LeaveType leaveType : leaveTypeRepository.findByActiveTrueOrderByNameAsc()) {
             balances.add(ensureBalance(employee, leaveType));
         }
         return balances;
@@ -181,18 +254,19 @@ public class LeaveServiceImpl implements LeaveService {
 
     public LeaveSaleRequest createLeaveSale(LeaveSaleRequestInput input) {
         Employee employee = employeeService.findById(input.getEmployeeId());
-        if (!isLeaveSaleType(input.getLeaveType())) {
+        LeaveType leaveType = findLeaveTypeByCode(input.getLeaveTypeCode());
+        if (!isLeaveSaleType(leaveType)) {
             throw new OperationNotAllowedException("Leave selling is only allowed for annual or vacation leave");
         }
-        LeaveBalance balance = ensureBalance(employee, input.getLeaveType());
+        LeaveBalance balance = ensureBalance(employee, leaveType);
         if (balance.getAvailableDays() < input.getDaysToSell()) {
             throw new OperationNotAllowedException("Insufficient leave balance to sell requested days");
         }
         LeaveSaleRequest request = new LeaveSaleRequest();
         request.setEmployee(employee);
-        request.setLeaveType(input.getLeaveType());
+        request.setLeaveType(leaveType);
         request.setDaysToSell(input.getDaysToSell());
-        request.setRequestDate(DateUtils.today());
+        request.setRequestDate(new Date());
         request.setReason(input.getReason());
         LeaveSaleRequest saved = leaveSaleRequestRepository.save(request);
         auditTrailService.log("LEAVE", "LeaveSaleRequest", String.valueOf(saved.getId()), "CREATE",
@@ -224,7 +298,7 @@ public class LeaveServiceImpl implements LeaveService {
         }
         request.setStatus(decisionRequest.getStatus());
         request.setDecidedByManagerId(decisionRequest.getManagerEmployeeId());
-        request.setDecisionDate(DateUtils.today());
+        request.setDecisionDate(new Date());
         LeaveSaleRequest saved = leaveSaleRequestRepository.save(request);
         auditTrailService.log("LEAVE", "LeaveSaleRequest", String.valueOf(saved.getId()), "DECIDE",
                 "Manager decision " + saved.getStatus() + " for leave sale request " + saved.getId());
@@ -256,7 +330,7 @@ public class LeaveServiceImpl implements LeaveService {
         validateManagerAccess(claim.getEmployee(), decisionRequest.getManagerEmployeeId(), true);
         claim.setStatus(decisionRequest.getStatus());
         claim.setDecidedByManagerId(decisionRequest.getManagerEmployeeId());
-        claim.setDecisionDate(DateUtils.today());
+        claim.setDecisionDate(new Date());
         OvertimeClaim saved = overtimeClaimRepository.save(claim);
         auditTrailService.log("LEAVE", "OvertimeClaim", String.valueOf(saved.getId()), "DECIDE",
                 "Manager decision " + saved.getStatus() + " for overtime claim " + saved.getId());
@@ -288,11 +362,11 @@ public class LeaveServiceImpl implements LeaveService {
     public List<LeaveBalance> accrueBalances(LocalDate asOfDate) {
         List<LeaveBalance> balances = new ArrayList<LeaveBalance>();
         for (Employee employee : employeeService.findAll()) {
-            for (LeaveType leaveType : LeaveType.values()) {
+            for (LeaveType leaveType : leaveTypeRepository.findByActiveTrueOrderByNameAsc()) {
                 LeaveBalance balance = ensureBalance(employee, leaveType);
                 if (requiresBalanceCheck(leaveType)) {
-                    int monthsWorked = Math.max(0, (int) ChronoUnit.MONTHS.between(
-                            employee.getHireDate().withDayOfMonth(1),
+                    int monthsWorked = Math.max(0, (int) java.time.temporal.ChronoUnit.MONTHS.between(
+                            toLocalDate(employee.getHireDate()).withDayOfMonth(1),
                             asOfDate.withDayOfMonth(1)) + 1);
                     int accrued = monthlyEntitlement(leaveType) * monthsWorked;
                     balance.setAccruedDays(accrued);
@@ -315,12 +389,12 @@ public class LeaveServiceImpl implements LeaveService {
     }
 
     private LeaveBalance ensureBalance(Employee employee, LeaveType leaveType) {
-        return leaveBalanceRepository.findByEmployeeIdAndLeaveType(employee.getId(), leaveType)
+        return leaveBalanceRepository.findByEmployeeIdAndLeaveType_Code(employee.getId(), leaveType.getCode())
                 .orElseGet(() -> {
                     LeaveBalance balance = new LeaveBalance();
                     balance.setEmployee(employee);
                     balance.setLeaveType(leaveType);
-                    balance.setAccruedDays(leaveType == LeaveType.UNPAID ? 0 : monthlyEntitlement(leaveType));
+                    balance.setAccruedDays(monthlyEntitlement(leaveType));
                     balance.setUsedDays(0);
                     balance.setSoldDays(0);
                     balance.setAvailableDays(availableDays(balance));
@@ -341,26 +415,11 @@ public class LeaveServiceImpl implements LeaveService {
     }
 
     private boolean requiresBalanceCheck(LeaveType leaveType) {
-        return leaveType == LeaveType.ANNUAL
-                || leaveType == LeaveType.VACATION
-                || leaveType == LeaveType.SICK
-                || leaveType == LeaveType.PATERNITY;
+        return leaveType.isBalanceTracked();
     }
 
     private int monthlyEntitlement(LeaveType leaveType) {
-        switch (leaveType) {
-            case ANNUAL:
-            case VACATION:
-                return 2;
-            case SICK:
-                return 1;
-            case PATERNITY:
-                return 1;
-            case MATERNITY:
-                return 3;
-            default:
-                return 0;
-        }
+        return leaveType.getMonthlyEntitlement() == null ? 0 : leaveType.getMonthlyEntitlement();
     }
 
     private int availableDays(LeaveBalance balance) {
@@ -368,6 +427,54 @@ public class LeaveServiceImpl implements LeaveService {
     }
 
     private boolean isLeaveSaleType(LeaveType leaveType) {
-        return leaveType == LeaveType.ANNUAL || leaveType == LeaveType.VACATION;
+        return leaveType.isLeaveSaleAllowed();
+    }
+
+    private LocalDate toLocalDate(Date date) {
+        return date == null ? null : date.toInstant().atZone(ZoneId.systemDefault()).toLocalDate();
+    }
+
+    private LeaveType findLeaveTypeByCode(String leaveTypeCode) {
+        return leaveTypeRepository.findByCodeIgnoreCase(normalizeCode(leaveTypeCode))
+                .orElseThrow(() -> new ResourceNotFoundException("Leave type not found: " + leaveTypeCode));
+    }
+
+    private String normalizeCode(String value) {
+        if (value == null || value.trim().isEmpty()) {
+            throw new IllegalArgumentException("Leave type code is required");
+        }
+        return value.trim().toUpperCase();
+    }
+
+    private String normalizeName(String value) {
+        if (value == null || value.trim().isEmpty()) {
+            throw new IllegalArgumentException("Leave type name is required");
+        }
+        return value.trim();
+    }
+
+    private void applyLeaveType(LeaveType leaveType,
+                                LeaveTypeRequest input,
+                                String code,
+                                String name) {
+        leaveType.setCode(code);
+        leaveType.setName(name);
+        leaveType.setMonthlyEntitlement(input.getMonthlyEntitlement() == null ? 0 : input.getMonthlyEntitlement());
+        leaveType.setBalanceTracked(input.isBalanceTracked());
+        leaveType.setLeaveSaleAllowed(input.isLeaveSaleAllowed());
+        leaveType.setActive(input.isActive());
+    }
+
+    private int workingDaysBetween(LocalDate startDate, LocalDate endDate) {
+        int days = 0;
+        LocalDate cursor = startDate;
+        while (!cursor.isAfter(endDate)) {
+            DayOfWeek dayOfWeek = cursor.getDayOfWeek();
+            if (dayOfWeek != DayOfWeek.SATURDAY && dayOfWeek != DayOfWeek.SUNDAY) {
+                days++;
+            }
+            cursor = cursor.plusDays(1);
+        }
+        return days;
     }
 }

@@ -30,10 +30,14 @@
                     <ul class="nav nav-second-level collapse">
                         <li><a th:href="@{/employees}">Employee List</a></li>
                         <li><a th:href="@{/employees/add-employee}">Add Employee</a></li>
+                        <li><a th:href="@{/employees/departments}">Departments</a></li>
+                        <li><a th:href="@{/employees/job-titles}">Job Titles</a></li>
+                        <li><a th:href="@{/employees/employment-types}">Employment Types</a></li>
+                        <li><a th:href="@{/employees/education-levels}">Education Levels</a></li>
                     </ul>
                 </li>
                 <li>
-                    <a href="#"><span class="nav-label">Leave</span><span class="fa arrow"></span></a>
+                    <a href="#"><span class="nav-label">Leave</span><span class="fa  fa-arrow"></span></a>
                     <ul class="nav nav-second-level collapse">
                         <li><a th:href="@{/leave}">Leave Requests</a></li>
                         <li><a th:href="@{/leave/balances}">Leave Balances</a></li>
@@ -42,7 +46,7 @@
                     </ul>
                 </li>
                 <li>
-                    <a href="#"><span class="nav-label">Payroll</span><span class="fa arrow"></span></a>
+                    <a href="#"><span class="nav-label">Payroll</span><span class="nav-label"></span></a>
                     <ul class="nav nav-second-level collapse">
                         <li><a th:href="@{/payroll}">Payroll Runs</a></li>
                         <li><a th:href="@{/payroll/process-run}">Process Payroll</a></li>
@@ -51,7 +55,15 @@
                         <li><a th:href="@{/payroll/exchange-rates}">Exchange Rates</a></li>
                     </ul>
                 </li>
-                <li><a th:href="@{/performance}"><span class="nav-label">Performance</span></a></li>
+                <li>
+                    <a href="#"><span class="nav-label">Performance</span><span class="fa arrow"></span></a>
+                    <ul class="nav nav-second-level collapse">
+                        <li><a th:href="@{/performance/reporting-periods}">Reporting Periods</a></li>
+                        <li><a th:href="@{/performance/contracts}">Contracts</a></li>
+                        <li><a th:href="@{/performance/perspectives}">Perspectives</a></li>
+                        <li><a th:href="@{/performance/strategic-goals}">Strategic Goals</a></li>
+                    </ul>
+                </li>
                 <li><a th:href="@{/reports}"><span class="nav-label">Reporting</span></a></li>
             </ul>
         </div>
@@ -89,11 +101,25 @@
         </div>
 
         <div class="wrapper wrapper-content" th:fragment="alerts">
-            <div th:if="${errorMsgs != null}">
-                <div th:each="message : ${errorMsgs}" class="alert alert-danger" th:text="${message}">Error</div>
+            <div th:if="${errorMsgs != null }">
+                <div th:each="message: ${errorMsgs}">
+                    <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                        <div th:text="${message}">Error messages</div>
+                        <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                            <span aria-hidden="true">&times;</span>
+                        </button>
+                    </div>
+                </div>
             </div>
-            <div th:if="${infoMsgs != null}">
-                <div th:each="message : ${infoMsgs}" class="alert alert-info" th:text="${message}">Info</div>
+            <div th:if="${infoMsgs != null }">
+                <div th:each="message: ${infoMsgs}">
+                    <div class="alert alert-info alert-dismissible fade show" role="alert">
+                        <div th:text="${message}">Info messages</div>
+                        <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                            <span aria-hidden="true">&times;</span>
+                        </button>
+                    </div>
+                </div>
             </div>
         </div>
 
@@ -111,7 +137,21 @@
                     th:src="@{/js/plugins/metisMenu/jquery.metisMenu.js}"></script>
             <script src="../../static/js/plugins/slimscroll/jquery.slimscroll.min.js"
                     th:src="@{/js/plugins/slimscroll/jquery.slimscroll.min.js}"></script>
+            <script src="../../static/js/plugins/datapicker/bootstrap-datepicker.js"
+                    th:src="@{/js/plugins/datapicker/bootstrap-datepicker.js}"></script>
             <script src="../../static/js/inspinia.js" th:src="@{/js/inspinia.js}"></script>
+            <script th:inline="javascript">
+                $(document).ready(function () {
+                    $('.js-date-picker').datepicker({
+                        todayBtn: "linked",
+                        format: 'dd/mm/yyyy',
+                        keyboardNavigation: false,
+                        forceParse: false,
+                        calendarWeeks: true,
+                        autoclose: true
+                    });
+                });
+            </script>
         </th:block>
     </div>
 </div>

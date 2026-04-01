@@ -1,8 +1,6 @@
 package hrms.employee.service.impl;
 
 import hrms.audit.service.AuditTrailService;
-import hrms.common.exception.DuplicateResourceException;
-import hrms.common.exception.OperationNotAllowedException;
 import hrms.common.exception.ResourceNotFoundException;
 import hrms.common.util.StringUtils;
 import hrms.employee.dto.EmployeeDependentRequest;
@@ -10,25 +8,31 @@ import hrms.employee.dto.EmployeeDisabilityRequest;
 import hrms.employee.dto.EmployeeContractRequest;
 import hrms.employee.dto.EmployeeQualificationRequest;
 import hrms.employee.dto.EmployeeRelatedContactRequest;
-import hrms.employee.entity.Department;
+import hrms.employee.dto.EmployeeAddressRequest;
 import hrms.employee.dto.EmployeeRequest;
+import hrms.employee.entity.EmployeeAddress;
 import hrms.employee.entity.EmployeeDependent;
 import hrms.employee.entity.EmployeeDisability;
 import hrms.employee.entity.Employee;
 import hrms.employee.entity.EmployeeContract;
 import hrms.employee.entity.EmployeeQualification;
 import hrms.employee.entity.EmployeeRelatedContact;
-import hrms.employee.entity.EmploymentType;
-import hrms.employee.entity.JobTitle;
 import hrms.employee.model.EmploymentStatus;
 import hrms.employee.repository.EmployeeRepository;
+import hrms.employee.service.EmployeeNumberGenerator;
 import hrms.employee.service.EmployeeReferenceService;
+import hrms.employee.service.EmployeeRequestMapper;
+import hrms.employee.service.EmployeeRequestSanitizer;
 import hrms.employee.service.EmployeeService;
+import hrms.employee.service.EmployeeValidator;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
+import java.time.ZoneId;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
 import java.util.Locale;
 
@@ -38,23 +42,37 @@ public class EmployeeServiceImpl implements EmployeeService {
 
     private final EmployeeRepository employeeRepository;
     private final AuditTrailService auditTrailService;
+    private final EmployeeRequestSanitizer employeeRequestSanitizer;
+    private final EmployeeValidator employeeValidator;
+    private final EmployeeRequestMapper employeeRequestMapper;
+    private final EmployeeNumberGenerator employeeNumberGenerator;
     private final EmployeeReferenceService employeeReferenceService;
 
     public EmployeeServiceImpl(EmployeeRepository employeeRepository,
                                AuditTrailService auditTrailService,
+                               EmployeeRequestSanitizer employeeRequestSanitizer,
+                               EmployeeValidator employeeValidator,
+                               EmployeeRequestMapper employeeRequestMapper,
+                               EmployeeNumberGenerator employeeNumberGenerator,
                                EmployeeReferenceService employeeReferenceService) {
         this.employeeRepository = employeeRepository;
         this.auditTrailService = auditTrailService;
+        this.employeeRequestSanitizer = employeeRequestSanitizer;
+        this.employeeValidator = employeeValidator;
+        this.employeeRequestMapper = employeeRequestMapper;
+        this.employeeNumberGenerator = employeeNumberGenerator;
         this.employeeReferenceService = employeeReferenceService;
     }
 
     public Employee create(EmployeeRequest request) {
-        employeeRepository.findByEmployeeNumber(request.getEmployeeNumber()).ifPresent(existing -> {
-            throw new DuplicateResourceException("Employee number already exists: " + request.getEmployeeNumber());
-        });
+        employeeRequestSanitizer.sanitize(request);
+        employeeValidator.validateForCreate(request);
         Employee employee = new Employee();
-        apply(employee, request);
-        Employee saved = employeeRepository.save(employee);
+        employee.setEmployeeNumber(StringUtils.hasText(request.getEmployeeNumber())
+                ? request.getEmployeeNumber()
+                : employeeNumberGenerator.nextEmployeeNumber());
+        employeeRequestMapper.apply(employee, request);
+        Employee saved = saveEmployee(employee);
         auditTrailService.log("EMPLOYEE", "Employee", String.valueOf(saved.getId()), "CREATE",
                 "Created employee profile for " + saved.getEmployeeNumber());
         return saved;
@@ -93,10 +111,10 @@ public class EmployeeServiceImpl implements EmployeeService {
             employees.removeIf(employee -> employee.getStatus() != status);
         }
         if (hiredFrom != null) {
-            employees.removeIf(employee -> employee.getHireDate() == null || employee.getHireDate().isBefore(hiredFrom));
+            employees.removeIf(employee -> employee.getHireDate() == null || toLocalDate(employee.getHireDate()).isBefore(hiredFrom));
         }
         if (hiredTo != null) {
-            employees.removeIf(employee -> employee.getHireDate() == null || employee.getHireDate().isAfter(hiredTo));
+            employees.removeIf(employee -> employee.getHireDate() == null || toLocalDate(employee.getHireDate()).isAfter(hiredTo));
         }
         return employees;
     }
@@ -108,17 +126,35 @@ public class EmployeeServiceImpl implements EmployeeService {
     }
 
     public Employee update(Long id, EmployeeRequest request) {
+        employeeRequestSanitizer.sanitize(request);
         Employee employee = findById(id);
-        employeeRepository.findByEmployeeNumber(request.getEmployeeNumber())
-                .filter(existing -> !existing.getId().equals(id))
-                .ifPresent(existing -> {
-                    throw new DuplicateResourceException("Employee number already exists: " + request.getEmployeeNumber());
-                });
-        apply(employee, request);
-        Employee saved = employeeRepository.save(employee);
+        employeeValidator.validateForUpdate(id, request);
+        employeeRequestMapper.apply(employee, request);
+        Employee saved = saveEmployee(employee);
         auditTrailService.log("EMPLOYEE", "Employee", String.valueOf(saved.getId()), "UPDATE",
                 "Updated employee profile for " + saved.getEmployeeNumber());
         return saved;
+    }
+
+    public EmployeeAddress addAddress(Long employeeId, EmployeeAddressRequest request) {
+        Employee employee = findById(employeeId);
+        if (!StringUtils.hasText(request.getProvince())
+                && !StringUtils.hasText(request.getDistrict())
+                && !StringUtils.hasText(request.getStreetAddress())
+                && !StringUtils.hasText(request.getAddress())) {
+            throw new IllegalArgumentException("At least one address field is required");
+        }
+        EmployeeAddress address = new EmployeeAddress();
+        address.setEmployee(employee);
+        address.setProvince(trimToNull(request.getProvince()));
+        address.setDistrict(trimToNull(request.getDistrict()));
+        address.setStreetAddress(trimToNull(request.getStreetAddress()));
+        address.setFullAddress(buildAddress(request));
+        employee.getAddresses().add(address);
+        employeeRepository.save(employee);
+        auditTrailService.log("EMPLOYEE", "EmployeeAddress", String.valueOf(employeeId), "CREATE",
+                "Added address for employee " + employee.getEmployeeNumber());
+        return address;
     }
 
     public void delete(Long id) {
@@ -126,6 +162,31 @@ public class EmployeeServiceImpl implements EmployeeService {
         employeeRepository.delete(employee);
         auditTrailService.log("EMPLOYEE", "Employee", String.valueOf(id), "DELETE",
                 "Deleted employee profile for " + employee.getEmployeeNumber());
+    }
+
+    public EmployeeQualification addQualification(Long employeeId, EmployeeQualificationRequest request) {
+        Employee employee = findById(employeeId);
+        if (request.getEducationLevelId() == null) {
+            throw new IllegalArgumentException("Education level is required");
+        }
+        if (request.getInstitutionId() == null) {
+            throw new IllegalArgumentException("Institution is required");
+        }
+        if (!StringUtils.hasText(request.getQualificationName())) {
+            throw new IllegalArgumentException("Qualification name is required");
+        }
+        EmployeeQualification qualification = new EmployeeQualification();
+        qualification.setEmployee(employee);
+        qualification.setEducationLevel(employeeReferenceService.findEducationLevel(request.getEducationLevelId()));
+        qualification.setInstitution(employeeReferenceService.findInstitution(request.getInstitutionId()));
+        qualification.setQualificationName(request.getQualificationName().trim());
+        qualification.setCompletionYear(request.getCompletionYear());
+        qualification.setPeriodStudied(request.getPeriodStudied());
+        employee.getQualifications().add(qualification);
+        employeeRepository.save(employee);
+        auditTrailService.log("EMPLOYEE", "EmployeeQualification", String.valueOf(employeeId), "CREATE",
+                "Added qualification for employee " + employee.getEmployeeNumber());
+        return qualification;
     }
 
     public EmployeeDependent addDependent(Long employeeId, EmployeeDependentRequest request) {
@@ -190,7 +251,8 @@ public class EmployeeServiceImpl implements EmployeeService {
         if (!StringUtils.hasText(request.getContractName())) {
             throw new IllegalArgumentException("Contract name is required");
         }
-        if (request.getEndDate() != null && request.getStartDate() != null && request.getEndDate().isBefore(request.getStartDate())) {
+        if (request.getEndDate() != null && request.getStartDate() != null
+                && toLocalDate(request.getEndDate()).isBefore(toLocalDate(request.getStartDate()))) {
             throw new IllegalArgumentException("Contract end date cannot be before start date");
         }
         if (request.isActive()) {
@@ -214,182 +276,16 @@ public class EmployeeServiceImpl implements EmployeeService {
         return contract;
     }
 
-    private void apply(Employee employee, EmployeeRequest request) {
-        Department department = resolveDepartment(request);
-        JobTitle jobTitle = resolveJobTitle(request);
-        EmploymentType employmentType = resolveEmploymentType(request);
-        validateManager(employee, request);
-        employee.setEmployeeNumber(request.getEmployeeNumber());
-        employee.setFirstName(request.getFirstName());
-        employee.setMiddleName(request.getMiddleName());
-        employee.setLastName(request.getLastName());
-        employee.setEmail(request.getEmail());
-        employee.setPhoneNumber(request.getPhoneNumber());
-        employee.setAddress(request.getAddress());
-        employee.setNationalId(request.getNationalId());
-        employee.setEmergencyContactName(request.getEmergencyContactName());
-        employee.setEmergencyContactPhone(request.getEmergencyContactPhone());
-        employee.setJobTitle(jobTitle);
-        employee.setDepartment(department);
-        employee.setEmploymentType(employmentType);
-        employee.setHireDate(request.getHireDate());
-        employee.setTerminationDate(request.getTerminationDate());
-        employee.setManagerEmployeeId(request.getManagerEmployeeId());
-        employee.setPreferredCurrency(request.getPreferredCurrency());
-        employee.setMonthlySalary(jobTitle.getGrade().getMonthlySalary());
-        employee.setHourlyRate(jobTitle.getGrade().getHourlyRate());
-        employee.setContractDocumentPath(request.getContractDocumentPath());
-        employee.setContractFileName(request.getContractFileName());
-        employee.setEmploymentHistory(request.getEmploymentHistory());
-        employee.setBenefitsSummary(request.getBenefitsSummary());
-        employee.setPerformanceSummary(request.getPerformanceSummary());
-        employee.setStatus(request.getStatus() == null ? EmploymentStatus.ACTIVE : request.getStatus());
-        if (request.getQualifications() != null) {
-            employee.getQualifications().clear();
-            for (EmployeeQualificationRequest qualificationRequest : request.getQualifications()) {
-                if (qualificationRequest == null || !hasQualificationContent(qualificationRequest)) {
-                    continue;
-                }
-                if (qualificationRequest.getEducationLevelId() == null) {
-                    throw new IllegalArgumentException("Education level is required for each qualification");
-                }
-                if (qualificationRequest.getInstitutionId() == null) {
-                    throw new IllegalArgumentException("Institution is required for each qualification");
-                }
-                if (!StringUtils.hasText(qualificationRequest.getQualificationName())) {
-                    throw new IllegalArgumentException("Qualification name is required for each qualification");
-                }
-                EmployeeQualification qualification = new EmployeeQualification();
-                qualification.setEmployee(employee);
-                qualification.setEducationLevel(employeeReferenceService.findEducationLevel(qualificationRequest.getEducationLevelId()));
-                qualification.setInstitution(employeeReferenceService.findInstitution(qualificationRequest.getInstitutionId()));
-                qualification.setQualificationName(qualificationRequest.getQualificationName().trim());
-                qualification.setCompletionYear(qualificationRequest.getCompletionYear());
-                qualification.setPeriodStudied(qualificationRequest.getPeriodStudied());
-                employee.getQualifications().add(qualification);
-            }
-        }
-        if (request.getDependents() != null) {
-            employee.getDependents().clear();
-            for (EmployeeDependentRequest dependentRequest : request.getDependents()) {
-                if (dependentRequest == null || !hasDependentContent(dependentRequest)) {
-                    continue;
-                }
-                if (!StringUtils.hasText(dependentRequest.getFullName())) {
-                    throw new IllegalArgumentException("Dependent name is required for each dependent");
-                }
-                EmployeeDependent dependent = new EmployeeDependent();
-                dependent.setEmployee(employee);
-                dependent.setFullName(dependentRequest.getFullName().trim());
-                dependent.setRelationship(dependentRequest.getRelationship());
-                dependent.setDateOfBirth(dependentRequest.getDateOfBirth());
-                dependent.setNotes(dependentRequest.getNotes());
-                employee.getDependents().add(dependent);
-            }
-        }
-        if (request.getDisabilities() != null) {
-            employee.getDisabilities().clear();
-            for (EmployeeDisabilityRequest disabilityRequest : request.getDisabilities()) {
-                if (disabilityRequest == null || !hasDisabilityContent(disabilityRequest)) {
-                    continue;
-                }
-                if (!StringUtils.hasText(disabilityRequest.getDisabilityName())) {
-                    throw new IllegalArgumentException("Disability name is required for each disability record");
-                }
-                EmployeeDisability disability = new EmployeeDisability();
-                disability.setEmployee(employee);
-                disability.setDisabilityName(disabilityRequest.getDisabilityName().trim());
-                disability.setNotes(disabilityRequest.getNotes());
-                employee.getDisabilities().add(disability);
-            }
-        }
-        if (request.getRelatedContacts() != null) {
-            employee.getRelatedContacts().clear();
-            for (EmployeeRelatedContactRequest contactRequest : request.getRelatedContacts()) {
-                if (contactRequest == null || !hasRelatedContactContent(contactRequest)) {
-                    continue;
-                }
-                if (contactRequest.getContactType() == null) {
-                    throw new IllegalArgumentException("Contact type is required for each related contact");
-                }
-                if (!StringUtils.hasText(contactRequest.getFullName())) {
-                    throw new IllegalArgumentException("Contact name is required for each related contact");
-                }
-                EmployeeRelatedContact contact = new EmployeeRelatedContact();
-                contact.setEmployee(employee);
-                contact.setContactType(contactRequest.getContactType());
-                contact.setFullName(contactRequest.getFullName().trim());
-                contact.setRelationshipDescription(contactRequest.getRelationshipDescription());
-                contact.setPhoneNumber(contactRequest.getPhoneNumber());
-                contact.setEmailAddress(contactRequest.getEmailAddress());
-                contact.setAddress(contactRequest.getAddress());
-                employee.getRelatedContacts().add(contact);
-            }
+    private Employee saveEmployee(Employee employee) {
+        try {
+            return employeeRepository.save(employee);
+        } catch (DataIntegrityViolationException exception) {
+            throw new IllegalArgumentException("Employee record could not be saved. Check duplicate values such as employee number, email, or national ID.");
         }
     }
 
-    private void validateManager(Employee employee, EmployeeRequest request) {
-        if (employee.getId() != null
-                && request.getManagerEmployeeId() != null
-                && employee.getId().equals(request.getManagerEmployeeId())) {
-            throw new OperationNotAllowedException("Employee cannot report to themselves");
-        }
-    }
-
-    private Department resolveDepartment(EmployeeRequest request) {
-        if (request.getDepartmentId() != null) {
-            return employeeReferenceService.findDepartment(request.getDepartmentId());
-        }
-        if (StringUtils.hasText(request.getDepartment())) {
-            return employeeReferenceService.findDepartmentByName(request.getDepartment());
-        }
-        throw new IllegalArgumentException("Department is required");
-    }
-
-    private JobTitle resolveJobTitle(EmployeeRequest request) {
-        if (request.getJobTitleId() != null) {
-            return employeeReferenceService.findJobTitle(request.getJobTitleId());
-        }
-        if (StringUtils.hasText(request.getJobTitle())) {
-            return employeeReferenceService.findJobTitleByName(request.getJobTitle());
-        }
-        throw new IllegalArgumentException("Job title is required");
-    }
-
-    private EmploymentType resolveEmploymentType(EmployeeRequest request) {
-        if (request.getEmploymentTypeId() == null) {
-            throw new IllegalArgumentException("Employment type is required");
-        }
-        return employeeReferenceService.findEmploymentType(request.getEmploymentTypeId());
-    }
-
-    private boolean hasQualificationContent(EmployeeQualificationRequest request) {
-        return request.getEducationLevelId() != null
-                || request.getInstitutionId() != null
-                || StringUtils.hasText(request.getQualificationName())
-                || request.getCompletionYear() != null
-                || StringUtils.hasText(request.getPeriodStudied());
-    }
-
-    private boolean hasDependentContent(EmployeeDependentRequest request) {
-        return StringUtils.hasText(request.getFullName())
-                || StringUtils.hasText(request.getRelationship())
-                || request.getDateOfBirth() != null
-                || StringUtils.hasText(request.getNotes());
-    }
-
-    private boolean hasDisabilityContent(EmployeeDisabilityRequest request) {
-        return StringUtils.hasText(request.getDisabilityName())
-                || StringUtils.hasText(request.getNotes());
-    }
-
-    private boolean hasRelatedContactContent(EmployeeRelatedContactRequest request) {
-        return request.getContactType() != null
-                || StringUtils.hasText(request.getFullName())
-                || StringUtils.hasText(request.getRelationshipDescription())
-                || StringUtils.hasText(request.getPhoneNumber())
-                || StringUtils.hasText(request.getEmailAddress())
-                || StringUtils.hasText(request.getAddress());
+    private LocalDate toLocalDate(Date date) {
+        return date == null ? null : date.toInstant().atZone(ZoneId.systemDefault()).toLocalDate();
     }
 
     private boolean matchesQuery(Employee employee, String normalized) {
@@ -403,5 +299,26 @@ public class EmployeeServiceImpl implements EmployeeService {
 
     private boolean contains(String value, String normalized) {
         return value != null && value.toLowerCase(Locale.ENGLISH).contains(normalized);
+    }
+
+    private String trimToNull(String value) {
+        return StringUtils.hasText(value) ? value.trim() : null;
+    }
+
+    private String buildAddress(EmployeeAddressRequest request) {
+        List<String> parts = new ArrayList<String>();
+        if (StringUtils.hasText(request.getStreetAddress())) {
+            parts.add(request.getStreetAddress().trim());
+        }
+        if (StringUtils.hasText(request.getDistrict())) {
+            parts.add(request.getDistrict().trim());
+        }
+        if (StringUtils.hasText(request.getProvince())) {
+            parts.add(request.getProvince().trim());
+        }
+        if (parts.isEmpty() && StringUtils.hasText(request.getAddress())) {
+            return request.getAddress().trim();
+        }
+        return String.join(", ", parts);
     }
 }

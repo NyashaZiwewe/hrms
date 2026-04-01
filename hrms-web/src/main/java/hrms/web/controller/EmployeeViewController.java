@@ -1,11 +1,16 @@
 package hrms.web.controller;
 
 import hrms.employee.dto.EmployeeRequest;
+import hrms.employee.dto.EmployeeAddressRequest;
 import hrms.employee.dto.EmployeeContractRequest;
 import hrms.employee.dto.EmployeeQualificationRequest;
 import hrms.employee.dto.EmployeeDependentRequest;
 import hrms.employee.dto.EmployeeDisabilityRequest;
 import hrms.employee.dto.EmployeeRelatedContactRequest;
+import hrms.employee.dto.DepartmentRequest;
+import hrms.employee.dto.EducationLevelRequest;
+import hrms.employee.dto.EmploymentTypeRequest;
+import hrms.employee.dto.JobTitleRequest;
 import hrms.employee.dto.DisciplinaryRecordRequest;
 import hrms.employee.dto.EmploymentConfirmationApprovalRequest;
 import hrms.employee.dto.EmploymentConfirmationRequestInput;
@@ -18,6 +23,7 @@ import hrms.employee.service.EmployeeService;
 import hrms.web.constants.Pages;
 import hrms.web.service.EmploymentConfirmationDocumentService;
 import hrms.web.service.EmploymentConfirmationNotificationService;
+import hrms.web.util.PortletUtils;
 import org.springframework.core.io.FileSystemResource;
 import org.springframework.core.io.Resource;
 import org.springframework.http.HttpHeaders;
@@ -39,7 +45,10 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
+import java.time.ZoneId;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Date;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -81,6 +90,8 @@ public class EmployeeViewController {
     public ModelAndView addEmployee() {
         ModelAndView modelAndView = new ModelAndView(Pages.ADD_EMPLOYEE);
         modelAndView.addObject("employeeRequest", new EmployeeRequest());
+        modelAndView.addObject("employeeNumberPreview", "Auto-generated on save");
+        modelAndView.addObject("showPreferredCurrency", false);
         populateForm(modelAndView, "Add Employee");
         return modelAndView;
     }
@@ -90,11 +101,24 @@ public class EmployeeViewController {
                                      BindingResult bindingResult) {
         if (bindingResult.hasErrors()) {
             ModelAndView modelAndView = new ModelAndView(Pages.ADD_EMPLOYEE);
+            modelAndView.addObject("employeeNumberPreview", "Auto-generated on save");
+            modelAndView.addObject("showPreferredCurrency", false);
+            populateForm(modelAndView, "Add Employee");
+            PortletUtils.addBindingErrors(modelAndView, bindingResult);
+            return modelAndView;
+        }
+        Employee employee;
+        try {
+            employee = employeeService.create(employeeRequest);
+        } catch (RuntimeException exception) {
+            ModelAndView modelAndView = new ModelAndView(Pages.ADD_EMPLOYEE);
+            modelAndView.addObject("employeeNumberPreview", "Auto-generated on save");
+            modelAndView.addObject("showPreferredCurrency", false);
+            modelAndView.addObject("errorMsgs", Collections.singletonList(exception.getMessage()));
             populateForm(modelAndView, "Add Employee");
             return modelAndView;
         }
-        Employee employee = employeeService.create(employeeRequest);
-        return new ModelAndView("redirect:/employees/view-employee/" + employee.getId());
+        return redirectWithInfo("/employees/view-employee/" + employee.getId(), "Employee record saved successfully.");
     }
 
     @GetMapping("/view-employee/{id}")
@@ -110,19 +134,6 @@ public class EmployeeViewController {
         modelAndView.addObject("directReports", findDirectReports(employee, employees));
         modelAndView.addObject("coworkers", findCoworkers(employee, employees));
         modelAndView.addObject("activeContract", findActiveContract(employee));
-        modelAndView.addObject("hrManagers", findHrManagers(employees));
-        modelAndView.addObject("confirmationRequests", employeeOperationsService.employmentConfirmations(id));
-        modelAndView.addObject("confirmationSignerNames", buildEmployeeNameMap(employees));
-        EmploymentConfirmationRequestInput confirmationRequestInput = new EmploymentConfirmationRequestInput();
-        confirmationRequestInput.setEmployeeId(id);
-        confirmationRequestInput.setDeliveryEmail(employee.getEmail());
-        modelAndView.addObject("employmentConfirmationRequestInput", confirmationRequestInput);
-        modelAndView.addObject("employmentConfirmationApprovalRequest", new EmploymentConfirmationApprovalRequest());
-        DisciplinaryRecordRequest disciplinaryRecordRequest = new DisciplinaryRecordRequest();
-        disciplinaryRecordRequest.setEmployeeId(id);
-        modelAndView.addObject("disciplinaryRecordRequest", disciplinaryRecordRequest);
-        modelAndView.addObject("disciplinaryRecords", employeeOperationsService.disciplinaryRecords(id));
-        modelAndView.addObject("disciplinaryTypes", hrms.employee.model.DisciplinaryRecordType.values());
         return modelAndView;
     }
 
@@ -130,16 +141,12 @@ public class EmployeeViewController {
     public ModelAndView editEmployee(@PathVariable Long id) {
         Employee employee = employeeService.findById(id);
         EmployeeRequest request = new EmployeeRequest();
-        request.setEmployeeNumber(employee.getEmployeeNumber());
         request.setFirstName(employee.getFirstName());
         request.setMiddleName(employee.getMiddleName());
         request.setLastName(employee.getLastName());
         request.setEmail(employee.getEmail());
         request.setPhoneNumber(employee.getPhoneNumber());
-        request.setAddress(employee.getAddress());
         request.setNationalId(employee.getNationalId());
-        request.setEmergencyContactName(employee.getEmergencyContactName());
-        request.setEmergencyContactPhone(employee.getEmergencyContactPhone());
         request.setJobTitleId(employee.getJobTitle() == null ? null : employee.getJobTitle().getId());
         request.setDepartmentId(employee.getDepartment() == null ? null : employee.getDepartment().getId());
         request.setEmploymentTypeId(employee.getEmploymentType() == null ? null : employee.getEmploymentType().getId());
@@ -147,49 +154,16 @@ public class EmployeeViewController {
         request.setTerminationDate(employee.getTerminationDate());
         request.setManagerEmployeeId(employee.getManagerEmployeeId());
         request.setPreferredCurrency(employee.getPreferredCurrency());
-        request.setMonthlySalary(employee.getMonthlySalary());
-        request.setHourlyRate(employee.getHourlyRate());
         request.setEmploymentHistory(employee.getEmploymentHistory());
         request.setBenefitsSummary(employee.getBenefitsSummary());
         request.setPerformanceSummary(employee.getPerformanceSummary());
         request.setStatus(employee.getStatus());
-        for (hrms.employee.entity.EmployeeQualification qualification : employee.getQualifications()) {
-            EmployeeQualificationRequest qualificationRequest = new EmployeeQualificationRequest();
-            qualificationRequest.setEducationLevelId(qualification.getEducationLevel().getId());
-            qualificationRequest.setInstitutionId(qualification.getInstitution().getId());
-            qualificationRequest.setQualificationName(qualification.getQualificationName());
-            qualificationRequest.setCompletionYear(qualification.getCompletionYear());
-            qualificationRequest.setPeriodStudied(qualification.getPeriodStudied());
-            request.getQualifications().add(qualificationRequest);
-        }
-        for (hrms.employee.entity.EmployeeDependent dependent : employee.getDependents()) {
-            EmployeeDependentRequest dependentRequest = new EmployeeDependentRequest();
-            dependentRequest.setFullName(dependent.getFullName());
-            dependentRequest.setRelationship(dependent.getRelationship());
-            dependentRequest.setDateOfBirth(dependent.getDateOfBirth());
-            dependentRequest.setNotes(dependent.getNotes());
-            request.getDependents().add(dependentRequest);
-        }
-        for (hrms.employee.entity.EmployeeDisability disability : employee.getDisabilities()) {
-            EmployeeDisabilityRequest disabilityRequest = new EmployeeDisabilityRequest();
-            disabilityRequest.setDisabilityName(disability.getDisabilityName());
-            disabilityRequest.setNotes(disability.getNotes());
-            request.getDisabilities().add(disabilityRequest);
-        }
-        for (hrms.employee.entity.EmployeeRelatedContact contact : employee.getRelatedContacts()) {
-            EmployeeRelatedContactRequest contactRequest = new EmployeeRelatedContactRequest();
-            contactRequest.setContactType(contact.getContactType());
-            contactRequest.setFullName(contact.getFullName());
-            contactRequest.setRelationshipDescription(contact.getRelationshipDescription());
-            contactRequest.setPhoneNumber(contact.getPhoneNumber());
-            contactRequest.setEmailAddress(contact.getEmailAddress());
-            contactRequest.setAddress(contact.getAddress());
-            request.getRelatedContacts().add(contactRequest);
-        }
 
         ModelAndView modelAndView = new ModelAndView(Pages.EDIT_EMPLOYEE);
         modelAndView.addObject("employeeId", id);
+        modelAndView.addObject("employeeNumberPreview", employee.getEmployeeNumber());
         modelAndView.addObject("employeeRequest", request);
+        modelAndView.addObject("showPreferredCurrency", true);
         populateForm(modelAndView, "Edit Employee");
         return modelAndView;
     }
@@ -201,11 +175,312 @@ public class EmployeeViewController {
         if (bindingResult.hasErrors()) {
             ModelAndView modelAndView = new ModelAndView(Pages.EDIT_EMPLOYEE);
             modelAndView.addObject("employeeId", id);
+            modelAndView.addObject("employeeNumberPreview", employeeService.findById(id).getEmployeeNumber());
+            modelAndView.addObject("showPreferredCurrency", true);
+            populateForm(modelAndView, "Edit Employee");
+            PortletUtils.addBindingErrors(modelAndView, bindingResult);
+            return modelAndView;
+        }
+        try {
+            employeeService.update(id, employeeRequest);
+        } catch (RuntimeException exception) {
+            ModelAndView modelAndView = new ModelAndView(Pages.EDIT_EMPLOYEE);
+            modelAndView.addObject("employeeId", id);
+            modelAndView.addObject("employeeNumberPreview", employeeService.findById(id).getEmployeeNumber());
+            modelAndView.addObject("showPreferredCurrency", true);
+            modelAndView.addObject("errorMsgs", Collections.singletonList(exception.getMessage()));
             populateForm(modelAndView, "Edit Employee");
             return modelAndView;
         }
-        employeeService.update(id, employeeRequest);
-        return new ModelAndView("redirect:/employees/view-employee/" + id);
+        return redirectWithInfo("/employees/view-employee/" + id, "Employee record updated successfully.");
+    }
+
+    @GetMapping("/departments")
+    public ModelAndView departments() {
+        ModelAndView modelAndView = new ModelAndView(Pages.VIEW_DEPARTMENTS);
+        modelAndView.addObject("pageDomain", "Employee Management");
+        modelAndView.addObject("pageName", "Employees");
+        modelAndView.addObject("pageTitle", "View Departments");
+        modelAndView.addObject("departments", employeeReferenceService.departments());
+        return modelAndView;
+    }
+
+    @GetMapping("/departments/add")
+    public ModelAndView addDepartment() {
+        ModelAndView modelAndView = new ModelAndView(Pages.ADD_DEPARTMENT);
+        modelAndView.addObject("pageDomain", "Employee Management");
+        modelAndView.addObject("pageName", "Employees");
+        modelAndView.addObject("pageTitle", "Add Department");
+        modelAndView.addObject("departmentRequest", new DepartmentRequest());
+        return modelAndView;
+    }
+
+    @PostMapping("/departments/save")
+    public ModelAndView saveDepartment(@Valid @ModelAttribute DepartmentRequest departmentRequest,
+                                       BindingResult bindingResult) {
+        if (bindingResult.hasErrors()) {
+            ModelAndView modelAndView = new ModelAndView(Pages.ADD_DEPARTMENT);
+            modelAndView.addObject("pageDomain", "Employee Management");
+            modelAndView.addObject("pageName", "Employees");
+            modelAndView.addObject("pageTitle", "Add Department");
+            PortletUtils.addBindingErrors(modelAndView, bindingResult);
+            return modelAndView;
+        }
+        employeeReferenceService.createDepartment(departmentRequest);
+        return redirectWithInfo("/employees/departments", "Department saved successfully.");
+    }
+
+    @GetMapping("/departments/{departmentId}/edit")
+    public ModelAndView editDepartment(@PathVariable Long departmentId) {
+        ModelAndView modelAndView = new ModelAndView(Pages.EDIT_DEPARTMENT);
+        DepartmentRequest request = new DepartmentRequest();
+        request.setName(employeeReferenceService.findDepartment(departmentId).getName());
+        modelAndView.addObject("pageDomain", "Employee Management");
+        modelAndView.addObject("pageName", "Employees");
+        modelAndView.addObject("pageTitle", "Edit Department");
+        modelAndView.addObject("departmentId", departmentId);
+        modelAndView.addObject("departmentRequest", request);
+        return modelAndView;
+    }
+
+    @PostMapping("/departments/{departmentId}/update")
+    public ModelAndView updateDepartment(@PathVariable Long departmentId,
+                                         @Valid @ModelAttribute DepartmentRequest departmentRequest,
+                                         BindingResult bindingResult) {
+        if (bindingResult.hasErrors()) {
+            ModelAndView modelAndView = new ModelAndView(Pages.EDIT_DEPARTMENT);
+            modelAndView.addObject("pageDomain", "Employee Management");
+            modelAndView.addObject("pageName", "Employees");
+            modelAndView.addObject("pageTitle", "Edit Department");
+            modelAndView.addObject("departmentId", departmentId);
+            PortletUtils.addBindingErrors(modelAndView, bindingResult);
+            return modelAndView;
+        }
+        employeeReferenceService.updateDepartment(departmentId, departmentRequest);
+        return redirectWithInfo("/employees/departments", "Department updated successfully.");
+    }
+
+    @GetMapping("/employment-types")
+    public ModelAndView employmentTypes() {
+        ModelAndView modelAndView = new ModelAndView(Pages.VIEW_EMPLOYMENT_TYPES);
+        modelAndView.addObject("pageDomain", "Employee Management");
+        modelAndView.addObject("pageName", "Employees");
+        modelAndView.addObject("pageTitle", "View Employment Types");
+        modelAndView.addObject("employmentTypes", employeeReferenceService.employmentTypes());
+        return modelAndView;
+    }
+
+    @GetMapping("/education-levels")
+    public ModelAndView educationLevels() {
+        ModelAndView modelAndView = new ModelAndView(Pages.VIEW_EDUCATION_LEVELS);
+        modelAndView.addObject("pageDomain", "Employee Management");
+        modelAndView.addObject("pageName", "Employees");
+        modelAndView.addObject("pageTitle", "View Education Levels");
+        modelAndView.addObject("educationLevels", employeeReferenceService.educationLevels());
+        return modelAndView;
+    }
+
+    @GetMapping("/education-levels/add")
+    public ModelAndView addEducationLevel() {
+        ModelAndView modelAndView = new ModelAndView(Pages.ADD_EDUCATION_LEVEL);
+        modelAndView.addObject("pageDomain", "Employee Management");
+        modelAndView.addObject("pageName", "Employees");
+        modelAndView.addObject("pageTitle", "Add Education Level");
+        modelAndView.addObject("educationLevelRequest", new EducationLevelRequest());
+        return modelAndView;
+    }
+
+    @PostMapping("/education-levels/save")
+    public ModelAndView saveEducationLevel(@Valid @ModelAttribute EducationLevelRequest educationLevelRequest,
+                                           BindingResult bindingResult) {
+        if (bindingResult.hasErrors()) {
+            ModelAndView modelAndView = new ModelAndView(Pages.ADD_EDUCATION_LEVEL);
+            modelAndView.addObject("pageDomain", "Employee Management");
+            modelAndView.addObject("pageName", "Employees");
+            modelAndView.addObject("pageTitle", "Add Education Level");
+            PortletUtils.addBindingErrors(modelAndView, bindingResult);
+            return modelAndView;
+        }
+        employeeReferenceService.createEducationLevel(educationLevelRequest);
+        return redirectWithInfo("/employees/education-levels", "Education level saved successfully.");
+    }
+
+    @GetMapping("/education-levels/{educationLevelId}/edit")
+    public ModelAndView editEducationLevel(@PathVariable Long educationLevelId) {
+        ModelAndView modelAndView = new ModelAndView(Pages.EDIT_EDUCATION_LEVEL);
+        EducationLevelRequest request = new EducationLevelRequest();
+        request.setName(employeeReferenceService.findEducationLevel(educationLevelId).getName());
+        modelAndView.addObject("pageDomain", "Employee Management");
+        modelAndView.addObject("pageName", "Employees");
+        modelAndView.addObject("pageTitle", "Edit Education Level");
+        modelAndView.addObject("educationLevelId", educationLevelId);
+        modelAndView.addObject("educationLevelRequest", request);
+        return modelAndView;
+    }
+
+    @PostMapping("/education-levels/{educationLevelId}/update")
+    public ModelAndView updateEducationLevel(@PathVariable Long educationLevelId,
+                                             @Valid @ModelAttribute EducationLevelRequest educationLevelRequest,
+                                             BindingResult bindingResult) {
+        if (bindingResult.hasErrors()) {
+            ModelAndView modelAndView = new ModelAndView(Pages.EDIT_EDUCATION_LEVEL);
+            modelAndView.addObject("pageDomain", "Employee Management");
+            modelAndView.addObject("pageName", "Employees");
+            modelAndView.addObject("pageTitle", "Edit Education Level");
+            modelAndView.addObject("educationLevelId", educationLevelId);
+            PortletUtils.addBindingErrors(modelAndView, bindingResult);
+            return modelAndView;
+        }
+        employeeReferenceService.updateEducationLevel(educationLevelId, educationLevelRequest);
+        return redirectWithInfo("/employees/education-levels", "Education level updated successfully.");
+    }
+
+    @GetMapping("/employment-types/add")
+    public ModelAndView addEmploymentType() {
+        ModelAndView modelAndView = new ModelAndView(Pages.ADD_EMPLOYMENT_TYPE);
+        modelAndView.addObject("pageDomain", "Employee Management");
+        modelAndView.addObject("pageName", "Employees");
+        modelAndView.addObject("pageTitle", "Add Employment Type");
+        modelAndView.addObject("employmentTypeRequest", new EmploymentTypeRequest());
+        return modelAndView;
+    }
+
+    @PostMapping("/employment-types/save")
+    public ModelAndView saveEmploymentType(@Valid @ModelAttribute EmploymentTypeRequest employmentTypeRequest,
+                                           BindingResult bindingResult) {
+        if (bindingResult.hasErrors()) {
+            ModelAndView modelAndView = new ModelAndView(Pages.ADD_EMPLOYMENT_TYPE);
+            modelAndView.addObject("pageDomain", "Employee Management");
+            modelAndView.addObject("pageName", "Employees");
+            modelAndView.addObject("pageTitle", "Add Employment Type");
+            PortletUtils.addBindingErrors(modelAndView, bindingResult);
+            return modelAndView;
+        }
+        employeeReferenceService.createEmploymentType(employmentTypeRequest);
+        return redirectWithInfo("/employees/employment-types", "Employment type saved successfully.");
+    }
+
+    @GetMapping("/employment-types/{employmentTypeId}/edit")
+    public ModelAndView editEmploymentType(@PathVariable Long employmentTypeId) {
+        ModelAndView modelAndView = new ModelAndView(Pages.EDIT_EMPLOYMENT_TYPE);
+        EmploymentTypeRequest request = new EmploymentTypeRequest();
+        request.setName(employeeReferenceService.findEmploymentType(employmentTypeId).getName());
+        modelAndView.addObject("pageDomain", "Employee Management");
+        modelAndView.addObject("pageName", "Employees");
+        modelAndView.addObject("pageTitle", "Edit Employment Type");
+        modelAndView.addObject("employmentTypeId", employmentTypeId);
+        modelAndView.addObject("employmentTypeRequest", request);
+        return modelAndView;
+    }
+
+    @PostMapping("/employment-types/{employmentTypeId}/update")
+    public ModelAndView updateEmploymentType(@PathVariable Long employmentTypeId,
+                                             @Valid @ModelAttribute EmploymentTypeRequest employmentTypeRequest,
+                                             BindingResult bindingResult) {
+        if (bindingResult.hasErrors()) {
+            ModelAndView modelAndView = new ModelAndView(Pages.EDIT_EMPLOYMENT_TYPE);
+            modelAndView.addObject("pageDomain", "Employee Management");
+            modelAndView.addObject("pageName", "Employees");
+            modelAndView.addObject("pageTitle", "Edit Employment Type");
+            modelAndView.addObject("employmentTypeId", employmentTypeId);
+            PortletUtils.addBindingErrors(modelAndView, bindingResult);
+            return modelAndView;
+        }
+        employeeReferenceService.updateEmploymentType(employmentTypeId, employmentTypeRequest);
+        return redirectWithInfo("/employees/employment-types", "Employment type updated successfully.");
+    }
+
+    @GetMapping("/job-titles")
+    public ModelAndView jobTitles() {
+        ModelAndView modelAndView = new ModelAndView(Pages.VIEW_JOB_TITLES);
+        modelAndView.addObject("pageDomain", "Employee Management");
+        modelAndView.addObject("pageName", "Employees");
+        modelAndView.addObject("pageTitle", "View Job Titles");
+        modelAndView.addObject("jobTitles", employeeReferenceService.jobTitles());
+        modelAndView.addObject("grades", employeeReferenceService.grades());
+        return modelAndView;
+    }
+
+    @GetMapping("/job-titles/add")
+    public ModelAndView addJobTitle() {
+        ModelAndView modelAndView = new ModelAndView(Pages.ADD_JOB_TITLE);
+        modelAndView.addObject("pageDomain", "Employee Management");
+        modelAndView.addObject("pageName", "Employees");
+        modelAndView.addObject("pageTitle", "Add Job Title");
+        modelAndView.addObject("jobTitleRequest", new JobTitleRequest());
+        modelAndView.addObject("grades", employeeReferenceService.grades());
+        return modelAndView;
+    }
+
+    @PostMapping("/job-titles/save")
+    public ModelAndView saveJobTitle(@Valid @ModelAttribute JobTitleRequest jobTitleRequest,
+                                     BindingResult bindingResult) {
+        if (bindingResult.hasErrors()) {
+            ModelAndView modelAndView = new ModelAndView(Pages.ADD_JOB_TITLE);
+            modelAndView.addObject("pageDomain", "Employee Management");
+            modelAndView.addObject("pageName", "Employees");
+            modelAndView.addObject("pageTitle", "Add Job Title");
+            modelAndView.addObject("grades", employeeReferenceService.grades());
+            PortletUtils.addBindingErrors(modelAndView, bindingResult);
+            return modelAndView;
+        }
+        employeeReferenceService.createJobTitle(jobTitleRequest);
+        return redirectWithInfo("/employees/job-titles", "Job title saved successfully.");
+    }
+
+    @GetMapping("/job-titles/{jobTitleId}/edit")
+    public ModelAndView editJobTitle(@PathVariable Long jobTitleId) {
+        ModelAndView modelAndView = new ModelAndView(Pages.EDIT_JOB_TITLE);
+        JobTitleRequest request = new JobTitleRequest();
+        request.setName(employeeReferenceService.findJobTitle(jobTitleId).getName());
+        request.setGradeId(employeeReferenceService.findJobTitle(jobTitleId).getGrade().getId());
+        modelAndView.addObject("pageDomain", "Employee Management");
+        modelAndView.addObject("pageName", "Employees");
+        modelAndView.addObject("pageTitle", "Edit Job Title");
+        modelAndView.addObject("jobTitleId", jobTitleId);
+        modelAndView.addObject("jobTitleRequest", request);
+        modelAndView.addObject("grades", employeeReferenceService.grades());
+        return modelAndView;
+    }
+
+    @PostMapping("/job-titles/{jobTitleId}/update")
+    public ModelAndView updateJobTitle(@PathVariable Long jobTitleId,
+                                       @Valid @ModelAttribute JobTitleRequest jobTitleRequest,
+                                       BindingResult bindingResult) {
+        if (bindingResult.hasErrors()) {
+            ModelAndView modelAndView = new ModelAndView(Pages.EDIT_JOB_TITLE);
+            modelAndView.addObject("pageDomain", "Employee Management");
+            modelAndView.addObject("pageName", "Employees");
+            modelAndView.addObject("pageTitle", "Edit Job Title");
+            modelAndView.addObject("jobTitleId", jobTitleId);
+            modelAndView.addObject("grades", employeeReferenceService.grades());
+            PortletUtils.addBindingErrors(modelAndView, bindingResult);
+            return modelAndView;
+        }
+        employeeReferenceService.updateJobTitle(jobTitleId, jobTitleRequest);
+        return redirectWithInfo("/employees/job-titles", "Job title updated successfully.");
+    }
+
+    @GetMapping("/{id}/qualifications")
+    public ModelAndView manageQualifications(@PathVariable Long id) {
+        ModelAndView modelAndView = new ModelAndView(Pages.MANAGE_EMPLOYEE_QUALIFICATIONS);
+        populateEmployeeRecordPage(modelAndView, id, "Manage Qualifications");
+        modelAndView.addObject("qualificationRequest", new EmployeeQualificationRequest());
+        return modelAndView;
+    }
+
+    @PostMapping("/{id}/qualifications")
+    public ModelAndView saveQualification(@PathVariable Long id,
+                                          @Valid @ModelAttribute("qualificationRequest") EmployeeQualificationRequest qualificationRequest,
+                                          BindingResult bindingResult) {
+        if (bindingResult.hasErrors()) {
+            ModelAndView modelAndView = new ModelAndView(Pages.MANAGE_EMPLOYEE_QUALIFICATIONS);
+            populateEmployeeRecordPage(modelAndView, id, "Manage Qualifications");
+            PortletUtils.addBindingErrors(modelAndView, bindingResult);
+            return modelAndView;
+        }
+        employeeService.addQualification(id, qualificationRequest);
+        return redirectWithInfo("/employees/" + id + "/qualifications", "Qualification saved successfully.");
     }
 
     @GetMapping("/contracts/{contractId}/download")
@@ -224,6 +499,36 @@ public class EmployeeViewController {
                 .body(resource);
     }
 
+    @GetMapping("/{id}/addresses")
+    public ModelAndView manageAddresses(@PathVariable Long id) {
+        ModelAndView modelAndView = new ModelAndView(Pages.MANAGE_EMPLOYEE_ADDRESSES);
+        populateEmployeeRecordPage(modelAndView, id, "Manage Addresses");
+        modelAndView.addObject("addressRequest", new EmployeeAddressRequest());
+        return modelAndView;
+    }
+
+    @PostMapping("/{id}/addresses")
+    public ModelAndView saveAddress(@PathVariable Long id,
+                                    @Valid @ModelAttribute("addressRequest") EmployeeAddressRequest addressRequest,
+                                    BindingResult bindingResult) {
+        if (bindingResult.hasErrors()) {
+            ModelAndView modelAndView = new ModelAndView(Pages.MANAGE_EMPLOYEE_ADDRESSES);
+            populateEmployeeRecordPage(modelAndView, id, "Manage Addresses");
+            PortletUtils.addBindingErrors(modelAndView, bindingResult);
+            return modelAndView;
+        }
+        try {
+            employeeService.addAddress(id, addressRequest);
+        } catch (RuntimeException exception) {
+            ModelAndView modelAndView = new ModelAndView(Pages.MANAGE_EMPLOYEE_ADDRESSES);
+            populateEmployeeRecordPage(modelAndView, id, "Manage Addresses");
+            modelAndView.addObject("addressRequest", addressRequest);
+            modelAndView.addObject("errorMsgs", Collections.singletonList(exception.getMessage()));
+            return modelAndView;
+        }
+        return redirectWithInfo("/employees/" + id + "/addresses", "Address saved successfully.");
+    }
+
     @GetMapping("/{id}/dependents")
     public ModelAndView manageDependents(@PathVariable Long id) {
         ModelAndView modelAndView = new ModelAndView(Pages.MANAGE_EMPLOYEE_DEPENDENTS);
@@ -239,10 +544,11 @@ public class EmployeeViewController {
         if (bindingResult.hasErrors()) {
             ModelAndView modelAndView = new ModelAndView(Pages.MANAGE_EMPLOYEE_DEPENDENTS);
             populateEmployeeRecordPage(modelAndView, id, "Manage Dependants");
+            PortletUtils.addBindingErrors(modelAndView, bindingResult);
             return modelAndView;
         }
         employeeService.addDependent(id, dependentRequest);
-        return new ModelAndView("redirect:/employees/" + id + "/dependents");
+        return redirectWithInfo("/employees/" + id + "/dependents", "Dependant saved successfully.");
     }
 
     @GetMapping("/{id}/disabilities")
@@ -260,10 +566,11 @@ public class EmployeeViewController {
         if (bindingResult.hasErrors()) {
             ModelAndView modelAndView = new ModelAndView(Pages.MANAGE_EMPLOYEE_DISABILITIES);
             populateEmployeeRecordPage(modelAndView, id, "Manage Disabilities");
+            PortletUtils.addBindingErrors(modelAndView, bindingResult);
             return modelAndView;
         }
         employeeService.addDisability(id, disabilityRequest);
-        return new ModelAndView("redirect:/employees/" + id + "/disabilities");
+        return redirectWithInfo("/employees/" + id + "/disabilities", "Disability record saved successfully.");
     }
 
     @GetMapping("/{id}/contacts")
@@ -281,10 +588,11 @@ public class EmployeeViewController {
         if (bindingResult.hasErrors()) {
             ModelAndView modelAndView = new ModelAndView(Pages.MANAGE_EMPLOYEE_CONTACTS);
             populateEmployeeRecordPage(modelAndView, id, "Manage Related Contacts");
+            PortletUtils.addBindingErrors(modelAndView, bindingResult);
             return modelAndView;
         }
         employeeService.addRelatedContact(id, contactRequest);
-        return new ModelAndView("redirect:/employees/" + id + "/contacts");
+        return redirectWithInfo("/employees/" + id + "/contacts", "Related contact saved successfully.");
     }
 
     @GetMapping("/{id}/contracts")
@@ -303,11 +611,38 @@ public class EmployeeViewController {
         if (bindingResult.hasErrors()) {
             ModelAndView modelAndView = new ModelAndView(Pages.MANAGE_EMPLOYEE_CONTRACTS);
             populateEmployeeRecordPage(modelAndView, id, "Manage Contracts");
+            PortletUtils.addBindingErrors(modelAndView, bindingResult);
             return modelAndView;
         }
         storeContractFile(contractRequest, contractFile);
         employeeService.addContract(id, contractRequest);
-        return new ModelAndView("redirect:/employees/" + id + "/contracts");
+        return redirectWithInfo("/employees/" + id + "/contracts", "Contract saved successfully.");
+    }
+
+    @GetMapping("/{id}/disciplinary-records")
+    public ModelAndView manageDisciplinaryRecords(@PathVariable Long id) {
+        return buildDisciplinaryRecordsPage(id, new DisciplinaryRecordRequest());
+    }
+
+    @PostMapping("/{id}/disciplinary-records")
+    public ModelAndView saveDisciplinaryRecord(@PathVariable Long id,
+                                               @Valid @ModelAttribute("disciplinaryRecordRequest") DisciplinaryRecordRequest disciplinaryRecordRequest,
+                                               BindingResult bindingResult) {
+        disciplinaryRecordRequest.setEmployeeId(id);
+        if (bindingResult.hasErrors()) {
+            ModelAndView modelAndView = buildDisciplinaryRecordsPage(id, disciplinaryRecordRequest);
+            PortletUtils.addBindingErrors(modelAndView, bindingResult);
+            return modelAndView;
+        }
+        employeeOperationsService.createDisciplinaryRecord(disciplinaryRecordRequest);
+        return redirectWithInfo("/employees/" + id + "/disciplinary-records",
+                "Disciplinary record saved successfully.");
+    }
+
+    @GetMapping("/{id}/employment-confirmations")
+    public ModelAndView manageEmploymentConfirmations(@PathVariable Long id) {
+        EmploymentConfirmationRequestInput confirmationRequestInput = new EmploymentConfirmationRequestInput();
+        return buildEmploymentConfirmationsPage(id, confirmationRequestInput, new EmploymentConfirmationApprovalRequest());
     }
 
     @GetMapping("/employment-confirmations/{requestId}/download")
@@ -329,40 +664,31 @@ public class EmployeeViewController {
     @PostMapping("/delete-employee/{id}")
     public ModelAndView deleteEmployee(@PathVariable Long id) {
         employeeService.delete(id);
-        return new ModelAndView("redirect:/employees");
+        return redirectWithInfo("/employees", "Employee record deleted successfully.");
     }
 
-    @PostMapping("/disciplinary-records")
-    public ModelAndView saveDisciplinaryRecord(@Valid @ModelAttribute DisciplinaryRecordRequest disciplinaryRecordRequest,
-                                               BindingResult bindingResult) {
-        if (bindingResult.hasErrors()) {
-            Long employeeId = disciplinaryRecordRequest.getEmployeeId();
-            return buildEmployeeView(employeeId,
-                    new EmploymentConfirmationRequestInput(),
-                    new EmploymentConfirmationApprovalRequest(),
-                    disciplinaryRecordRequest);
-        }
-        employeeOperationsService.createDisciplinaryRecord(disciplinaryRecordRequest);
-        return new ModelAndView("redirect:/employees/view-employee/" + disciplinaryRecordRequest.getEmployeeId());
-    }
-
-    @PostMapping("/employment-confirmations")
-    public ModelAndView requestEmploymentConfirmation(@Valid @ModelAttribute EmploymentConfirmationRequestInput employmentConfirmationRequestInput,
+    @PostMapping("/{id}/employment-confirmations")
+    public ModelAndView requestEmploymentConfirmation(@PathVariable Long id,
+                                                      @Valid @ModelAttribute EmploymentConfirmationRequestInput employmentConfirmationRequestInput,
                                                       BindingResult bindingResult) {
+        employmentConfirmationRequestInput.setEmployeeId(id);
         if (bindingResult.hasErrors()) {
-            return buildEmployeeView(employmentConfirmationRequestInput.getEmployeeId(),
+            ModelAndView modelAndView = buildEmploymentConfirmationsPage(id,
                     employmentConfirmationRequestInput,
-                    new EmploymentConfirmationApprovalRequest(),
-                    new DisciplinaryRecordRequest());
+                    new EmploymentConfirmationApprovalRequest());
+            PortletUtils.addBindingErrors(modelAndView, bindingResult);
+            return modelAndView;
         }
         EmploymentConfirmationRequest saved = employeeOperationsService.requestEmploymentConfirmation(employmentConfirmationRequestInput);
-        Employee employee = employeeService.findById(employmentConfirmationRequestInput.getEmployeeId());
+        Employee employee = employeeService.findById(id);
         employmentConfirmationNotificationService.notifyHrManagersOfRequest(employee, saved, findHrManagers(employeeService.findAll()));
-        return new ModelAndView("redirect:/employees/view-employee/" + employmentConfirmationRequestInput.getEmployeeId());
+        return redirectWithInfo("/employees/" + id + "/employment-confirmations",
+                "Employment confirmation request submitted successfully.");
     }
 
-    @PostMapping("/employment-confirmations/sign")
-    public ModelAndView signEmploymentConfirmation(@Valid @ModelAttribute EmploymentConfirmationApprovalRequest employmentConfirmationApprovalRequest,
+    @PostMapping("/{id}/employment-confirmations/sign")
+    public ModelAndView signEmploymentConfirmation(@PathVariable Long id,
+                                                   @Valid @ModelAttribute EmploymentConfirmationApprovalRequest employmentConfirmationApprovalRequest,
                                                    BindingResult bindingResult) {
         EmploymentConfirmationRequest existingRequest = findEmploymentConfirmationRequest(employmentConfirmationApprovalRequest.getRequestId());
         Long employeeId = existingRequest.getEmployee().getId();
@@ -371,10 +697,11 @@ public class EmployeeViewController {
             confirmationRequestInput.setEmployeeId(employeeId);
             confirmationRequestInput.setDeliveryEmail(existingRequest.getDeliveryEmail());
             confirmationRequestInput.setPurpose(existingRequest.getPurpose());
-            return buildEmployeeView(employeeId,
+            ModelAndView modelAndView = buildEmploymentConfirmationsPage(id,
                     confirmationRequestInput,
-                    employmentConfirmationApprovalRequest,
-                    new DisciplinaryRecordRequest());
+                    employmentConfirmationApprovalRequest);
+            PortletUtils.addBindingErrors(modelAndView, bindingResult);
+            return modelAndView;
         }
         Employee hrManager = employeeService.findById(employmentConfirmationApprovalRequest.getSignerEmployeeId());
         EmploymentConfirmationDocumentService.GeneratedDocument generatedDocument =
@@ -383,15 +710,11 @@ public class EmployeeViewController {
         employmentConfirmationApprovalRequest.setSignedDocumentFileName(generatedDocument.getFileName());
         EmploymentConfirmationRequest saved = employeeOperationsService.signEmploymentConfirmation(employmentConfirmationApprovalRequest);
         employmentConfirmationNotificationService.notifyEmployeeOfSignedLetter(saved.getEmployee(), saved);
-        return new ModelAndView("redirect:/employees/view-employee/" + employeeId);
+        return redirectWithInfo("/employees/" + id + "/employment-confirmations",
+                "Employment confirmation signed successfully.");
     }
 
     private void populateForm(ModelAndView modelAndView, String pageTitle) {
-        EmployeeRequest employeeRequest = (EmployeeRequest) modelAndView.getModel().get("employeeRequest");
-        if (employeeRequest != null && (employeeRequest.getQualifications() == null || employeeRequest.getQualifications().isEmpty())) {
-            employeeRequest.setQualifications(new ArrayList<EmployeeQualificationRequest>());
-            employeeRequest.getQualifications().add(new EmployeeQualificationRequest());
-        }
         modelAndView.addObject("pageDomain", "Employee Management");
         modelAndView.addObject("pageName", "Employees");
         modelAndView.addObject("pageTitle", pageTitle);
@@ -404,10 +727,12 @@ public class EmployeeViewController {
         modelAndView.addObject("employees", employeeService.findAll());
     }
 
-    private ModelAndView buildEmployeeView(Long employeeId,
-                                           EmploymentConfirmationRequestInput confirmationRequestInput,
-                                           EmploymentConfirmationApprovalRequest confirmationApprovalRequest,
-                                           DisciplinaryRecordRequest disciplinaryRecordRequest) {
+    private ModelAndView redirectWithInfo(String path, String message) {
+        PortletUtils.addInfoMsg(message);
+        return new ModelAndView("redirect:" + path);
+    }
+
+    private ModelAndView buildEmployeeView(Long employeeId) {
         ModelAndView modelAndView = new ModelAndView(Pages.VIEW_EMPLOYEE);
         Employee employee = employeeService.findById(employeeId);
         List<Employee> employees = employeeService.findAll();
@@ -419,9 +744,27 @@ public class EmployeeViewController {
         modelAndView.addObject("directReports", findDirectReports(employee, employees));
         modelAndView.addObject("coworkers", findCoworkers(employee, employees));
         modelAndView.addObject("activeContract", findActiveContract(employee));
-        modelAndView.addObject("hrManagers", findHrManagers(employees));
-        modelAndView.addObject("confirmationRequests", employeeOperationsService.employmentConfirmations(employeeId));
-        modelAndView.addObject("confirmationSignerNames", buildEmployeeNameMap(employees));
+        return modelAndView;
+    }
+
+    private ModelAndView buildDisciplinaryRecordsPage(Long employeeId,
+                                                      DisciplinaryRecordRequest disciplinaryRecordRequest) {
+        ModelAndView modelAndView = new ModelAndView(Pages.MANAGE_EMPLOYEE_DISCIPLINARY_RECORDS);
+        populateEmployeeRecordPage(modelAndView, employeeId, "Manage Disciplinary Records");
+        disciplinaryRecordRequest.setEmployeeId(employeeId);
+        modelAndView.addObject("disciplinaryRecordRequest", disciplinaryRecordRequest);
+        modelAndView.addObject("disciplinaryRecords", employeeOperationsService.disciplinaryRecords(employeeId));
+        modelAndView.addObject("disciplinaryTypes", hrms.employee.model.DisciplinaryRecordType.values());
+        return modelAndView;
+    }
+
+    private ModelAndView buildEmploymentConfirmationsPage(Long employeeId,
+                                                          EmploymentConfirmationRequestInput confirmationRequestInput,
+                                                          EmploymentConfirmationApprovalRequest confirmationApprovalRequest) {
+        ModelAndView modelAndView = new ModelAndView(Pages.MANAGE_EMPLOYEE_EMPLOYMENT_CONFIRMATIONS);
+        Employee employee = employeeService.findById(employeeId);
+        List<Employee> employees = employeeService.findAll();
+        populateEmployeeRecordPage(modelAndView, employeeId, "Manage Confirmation Of Employment");
         if (confirmationRequestInput.getEmployeeId() == null) {
             confirmationRequestInput.setEmployeeId(employeeId);
         }
@@ -430,10 +773,9 @@ public class EmployeeViewController {
         }
         modelAndView.addObject("employmentConfirmationRequestInput", confirmationRequestInput);
         modelAndView.addObject("employmentConfirmationApprovalRequest", confirmationApprovalRequest);
-        disciplinaryRecordRequest.setEmployeeId(employeeId);
-        modelAndView.addObject("disciplinaryRecordRequest", disciplinaryRecordRequest);
-        modelAndView.addObject("disciplinaryRecords", employeeOperationsService.disciplinaryRecords(employeeId));
-        modelAndView.addObject("disciplinaryTypes", hrms.employee.model.DisciplinaryRecordType.values());
+        modelAndView.addObject("hrManagers", findHrManagers(employees));
+        modelAndView.addObject("confirmationRequests", employeeOperationsService.employmentConfirmations(employeeId));
+        modelAndView.addObject("confirmationSignerNames", buildEmployeeNameMap(employees));
         return modelAndView;
     }
 
@@ -443,6 +785,9 @@ public class EmployeeViewController {
         modelAndView.addObject("pageName", "Employees");
         modelAndView.addObject("pageTitle", pageTitle);
         modelAndView.addObject("employee", employee);
+        modelAndView.addObject("addressRequest", new EmployeeAddressRequest());
+        modelAndView.addObject("educationLevels", employeeReferenceService.educationLevels());
+        modelAndView.addObject("institutions", employeeReferenceService.institutions());
         modelAndView.addObject("relatedContactTypes", hrms.employee.model.RelatedContactType.values());
     }
 

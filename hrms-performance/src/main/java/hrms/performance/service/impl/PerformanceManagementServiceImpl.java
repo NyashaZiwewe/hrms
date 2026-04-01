@@ -16,12 +16,14 @@ import hrms.performance.dto.PerformanceImprovementPlanRequest;
 import hrms.performance.dto.PerformanceReviewRequest;
 import hrms.performance.dto.PerspectiveRequest;
 import hrms.performance.dto.ReportingPeriodRequest;
+import hrms.performance.dto.StrategicObjectiveRequest;
 import hrms.performance.entity.ActionPlan;
 import hrms.performance.entity.PerformanceContract;
 import hrms.performance.entity.PerformanceGoal;
 import hrms.performance.entity.PerformanceImprovementPlan;
 import hrms.performance.entity.Perspective;
 import hrms.performance.entity.ReportingPeriod;
+import hrms.performance.entity.StrategicObjective;
 import hrms.performance.model.ApprovalStatus;
 import hrms.performance.model.LockStatus;
 import hrms.performance.model.PerformanceStatus;
@@ -31,13 +33,17 @@ import hrms.performance.repository.PerformanceGoalRepository;
 import hrms.performance.repository.PerformanceImprovementPlanRepository;
 import hrms.performance.repository.PerspectiveRepository;
 import hrms.performance.repository.ReportingPeriodRepository;
+import hrms.performance.repository.StrategicObjectiveRepository;
 import hrms.performance.service.PerformanceManagementService;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.time.ZoneId;
+import java.time.LocalDate;
 import java.math.RoundingMode;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
 
 @Service
@@ -47,6 +53,7 @@ public class PerformanceManagementServiceImpl implements PerformanceManagementSe
     private final EmployeeService employeeService;
     private final ReportingPeriodRepository reportingPeriodRepository;
     private final PerspectiveRepository perspectiveRepository;
+    private final StrategicObjectiveRepository strategicObjectiveRepository;
     private final PerformanceContractRepository performanceContractRepository;
     private final PerformanceGoalRepository performanceGoalRepository;
     private final ActionPlanRepository actionPlanRepository;
@@ -56,6 +63,7 @@ public class PerformanceManagementServiceImpl implements PerformanceManagementSe
     public PerformanceManagementServiceImpl(EmployeeService employeeService,
                                         ReportingPeriodRepository reportingPeriodRepository,
                                         PerspectiveRepository perspectiveRepository,
+                                        StrategicObjectiveRepository strategicObjectiveRepository,
                                         PerformanceContractRepository performanceContractRepository,
                                         PerformanceGoalRepository performanceGoalRepository,
                                         ActionPlanRepository actionPlanRepository,
@@ -64,6 +72,7 @@ public class PerformanceManagementServiceImpl implements PerformanceManagementSe
         this.employeeService = employeeService;
         this.reportingPeriodRepository = reportingPeriodRepository;
         this.perspectiveRepository = perspectiveRepository;
+        this.strategicObjectiveRepository = strategicObjectiveRepository;
         this.performanceContractRepository = performanceContractRepository;
         this.performanceGoalRepository = performanceGoalRepository;
         this.actionPlanRepository = actionPlanRepository;
@@ -72,6 +81,10 @@ public class PerformanceManagementServiceImpl implements PerformanceManagementSe
     }
 
     public ReportingPeriod createReportingPeriod(ReportingPeriodRequest request) {
+        validateReportingPeriod(request);
+        if (request.isActive()) {
+            deactivateOtherReportingPeriods(null);
+        }
         ReportingPeriod period = new ReportingPeriod();
         period.setName(request.getName());
         period.setStartDate(request.getStartDate());
@@ -83,6 +96,44 @@ public class PerformanceManagementServiceImpl implements PerformanceManagementSe
         return saved;
     }
 
+    public ReportingPeriod updateReportingPeriod(Long reportingPeriodId, ReportingPeriodRequest request) {
+        validateReportingPeriodForUpdate(reportingPeriodId, request);
+        if (request.isActive()) {
+            deactivateOtherReportingPeriods(reportingPeriodId);
+        }
+        ReportingPeriod period = reportingPeriod(reportingPeriodId);
+        period.setName(request.getName());
+        period.setStartDate(request.getStartDate());
+        period.setEndDate(request.getEndDate());
+        period.setActive(request.isActive());
+        ReportingPeriod saved = reportingPeriodRepository.save(period);
+        auditTrailService.log("PERFORMANCE", "ReportingPeriod", String.valueOf(saved.getId()), "UPDATE",
+                "Updated reporting period " + saved.getName());
+        return saved;
+    }
+
+    public void deleteReportingPeriod(Long reportingPeriodId) {
+        ReportingPeriod period = reportingPeriod(reportingPeriodId);
+        if (performanceContractRepository.existsByReportingPeriodId(reportingPeriodId)) {
+            throw new OperationNotAllowedException("Cannot delete reporting period because it is linked to performance contracts");
+        }
+        if (strategicObjectiveRepository.existsByReportingPeriodId(reportingPeriodId)) {
+            throw new OperationNotAllowedException("Cannot delete reporting period because it is linked to strategic goals");
+        }
+        if (performanceImprovementPlanRepository.existsByReportingPeriodId(reportingPeriodId)) {
+            throw new OperationNotAllowedException("Cannot delete reporting period because it is linked to improvement plans");
+        }
+        reportingPeriodRepository.delete(period);
+        auditTrailService.log("PERFORMANCE", "ReportingPeriod", String.valueOf(period.getId()), "DELETE",
+                "Deleted reporting period " + period.getName());
+    }
+
+    @Transactional(readOnly = true)
+    public ReportingPeriod reportingPeriod(Long reportingPeriodId) {
+        return reportingPeriodRepository.findById(reportingPeriodId)
+                .orElseThrow(() -> new ResourceNotFoundException("Reporting period not found: " + reportingPeriodId));
+    }
+
     public Perspective createPerspective(PerspectiveRequest request) {
         Perspective perspective = new Perspective();
         perspective.setName(request.getName());
@@ -91,6 +142,62 @@ public class PerformanceManagementServiceImpl implements PerformanceManagementSe
         auditTrailService.log("PERFORMANCE", "Perspective", String.valueOf(saved.getId()), "CREATE",
                 "Created perspective " + saved.getName());
         return saved;
+    }
+
+    public Perspective updatePerspective(Long perspectiveId, PerspectiveRequest request) {
+        Perspective perspective = perspective(perspectiveId);
+        perspective.setName(request.getName());
+        perspective.setDescription(request.getDescription());
+        Perspective saved = perspectiveRepository.save(perspective);
+        auditTrailService.log("PERFORMANCE", "Perspective", String.valueOf(saved.getId()), "UPDATE",
+                "Updated perspective " + saved.getName());
+        return saved;
+    }
+
+    @Transactional(readOnly = true)
+    public Perspective perspective(Long perspectiveId) {
+        return perspectiveRepository.findById(perspectiveId)
+                .orElseThrow(() -> new ResourceNotFoundException("Perspective not found: " + perspectiveId));
+    }
+
+    public StrategicObjective createStrategicObjective(StrategicObjectiveRequest request) {
+        ReportingPeriod reportingPeriod = reportingPeriodRepository.findById(request.getReportingPeriodId())
+                .orElseThrow(() -> new ResourceNotFoundException("Reporting period not found: " + request.getReportingPeriodId()));
+        Perspective perspective = perspectiveRepository.findById(request.getPerspectiveId())
+                .orElseThrow(() -> new ResourceNotFoundException("Perspective not found: " + request.getPerspectiveId()));
+        StrategicObjective strategicObjective = new StrategicObjective();
+        strategicObjective.setReportingPeriod(reportingPeriod);
+        strategicObjective.setPerspective(perspective);
+        strategicObjective.setName(request.getName());
+        strategicObjective.setDescription(request.getDescription());
+        strategicObjective.setActive(request.isActive());
+        StrategicObjective saved = strategicObjectiveRepository.save(strategicObjective);
+        auditTrailService.log("PERFORMANCE", "StrategicObjective", String.valueOf(saved.getId()), "CREATE",
+                "Created strategic objective " + saved.getName());
+        return saved;
+    }
+
+    public StrategicObjective updateStrategicObjective(Long strategicObjectiveId, StrategicObjectiveRequest request) {
+        StrategicObjective strategicObjective = strategicObjective(strategicObjectiveId);
+        ReportingPeriod reportingPeriod = reportingPeriodRepository.findById(request.getReportingPeriodId())
+                .orElseThrow(() -> new ResourceNotFoundException("Reporting period not found: " + request.getReportingPeriodId()));
+        Perspective perspective = perspectiveRepository.findById(request.getPerspectiveId())
+                .orElseThrow(() -> new ResourceNotFoundException("Perspective not found: " + request.getPerspectiveId()));
+        strategicObjective.setReportingPeriod(reportingPeriod);
+        strategicObjective.setPerspective(perspective);
+        strategicObjective.setName(request.getName());
+        strategicObjective.setDescription(request.getDescription());
+        strategicObjective.setActive(request.isActive());
+        StrategicObjective saved = strategicObjectiveRepository.save(strategicObjective);
+        auditTrailService.log("PERFORMANCE", "StrategicObjective", String.valueOf(saved.getId()), "UPDATE",
+                "Updated strategic objective " + saved.getName());
+        return saved;
+    }
+
+    @Transactional(readOnly = true)
+    public StrategicObjective strategicObjective(Long strategicObjectiveId) {
+        return strategicObjectiveRepository.findById(strategicObjectiveId)
+                .orElseThrow(() -> new ResourceNotFoundException("Strategic objective not found: " + strategicObjectiveId));
     }
 
     public PerformanceContract createContract(PerformanceContractRequest request) {
@@ -109,17 +216,41 @@ public class PerformanceManagementServiceImpl implements PerformanceManagementSe
         return saved;
     }
 
+    public PerformanceContract updateContract(Long contractId, PerformanceContractRequest request) {
+        PerformanceContract contract = contract(contractId);
+        Employee employee = employeeService.findById(request.getEmployeeId());
+        ReportingPeriod reportingPeriod = reportingPeriodRepository.findById(request.getReportingPeriodId())
+                .orElseThrow(() -> new ResourceNotFoundException("Reporting period not found: " + request.getReportingPeriodId()));
+        contract.setEmployee(employee);
+        contract.setReportingPeriod(reportingPeriod);
+        contract.setTitle(request.getTitle());
+        contract.setUpdatedAt(DateUtils.now());
+        PerformanceContract saved = performanceContractRepository.save(contract);
+        auditTrailService.log("PERFORMANCE", "PerformanceContract", String.valueOf(saved.getId()), "UPDATE",
+                "Updated performance contract " + saved.getId());
+        return saved;
+    }
+
+    @Transactional(readOnly = true)
+    public PerformanceContract contract(Long contractId) {
+        return performanceContractRepository.findById(contractId)
+                .orElseThrow(() -> new ResourceNotFoundException("Performance contract not found: " + contractId));
+    }
+
     public PerformanceGoal createGoal(PerformanceGoalRequest request) {
         PerformanceContract contract = performanceContractRepository.findById(request.getContractId())
                 .orElseThrow(() -> new ResourceNotFoundException("Performance contract not found: " + request.getContractId()));
-        Perspective perspective = perspectiveRepository.findById(request.getPerspectiveId())
-                .orElseThrow(() -> new ResourceNotFoundException("Perspective not found: " + request.getPerspectiveId()));
+        StrategicObjective strategicObjective = strategicObjectiveRepository.findById(request.getStrategicObjectiveId())
+                .orElseThrow(() -> new ResourceNotFoundException("Strategic objective not found: " + request.getStrategicObjectiveId()));
+        if (!strategicObjective.getReportingPeriod().getId().equals(contract.getReportingPeriod().getId())) {
+            throw new OperationNotAllowedException("Strategic objective does not belong to contract reporting period");
+        }
         PerformanceGoal goal = new PerformanceGoal();
         goal.setContract(contract);
-        goal.setPerspective(perspective);
+        goal.setPerspective(strategicObjective.getPerspective());
+        goal.setStrategicObjective(strategicObjective);
         goal.setAssignedEmployee(contract.getEmployee());
         goal.setName(request.getName());
-        goal.setStrategicObjective(request.getStrategicObjective());
         goal.setAllocatedWeight(request.getAllocatedWeight());
         goal.setMeasure(request.getMeasure());
         goal.setTargetValue(request.getTargetValue());
@@ -243,6 +374,16 @@ public class PerformanceManagementServiceImpl implements PerformanceManagementSe
     }
 
     @Transactional(readOnly = true)
+    public List<StrategicObjective> strategicObjectives() {
+        return strategicObjectiveRepository.findAllByOrderByReportingPeriodStartDateDescPerspectiveNameAscNameAsc();
+    }
+
+    @Transactional(readOnly = true)
+    public List<StrategicObjective> strategicObjectives(Long reportingPeriodId) {
+        return strategicObjectiveRepository.findByReportingPeriodIdOrderByPerspectiveNameAscNameAsc(reportingPeriodId);
+    }
+
+    @Transactional(readOnly = true)
     public PerformanceAnalyticsResponse analytics() {
         List<PerformanceContract> contracts = performanceContractRepository.findAll();
         List<PerformanceGoal> goals = performanceGoalRepository.findAll();
@@ -334,6 +475,53 @@ public class PerformanceManagementServiceImpl implements PerformanceManagementSe
 
     private BigDecimal scale(BigDecimal value) {
         return value.setScale(2, RoundingMode.HALF_UP);
+    }
+
+    private void validateReportingPeriod(ReportingPeriodRequest request) {
+        if (request.getName() == null || request.getName().trim().isEmpty()) {
+            throw new OperationNotAllowedException("Reporting period name is required");
+        }
+        if (request.getStartDate() == null || request.getEndDate() == null) {
+            throw new OperationNotAllowedException("Reporting period start date and end date are required");
+        }
+        String name = request.getName().trim();
+        if (reportingPeriodRepository.existsByNameIgnoreCase(name)) {
+            throw new OperationNotAllowedException("A reporting period with that name already exists");
+        }
+        if (toLocalDate(request.getEndDate()).isBefore(toLocalDate(request.getStartDate()))) {
+            throw new OperationNotAllowedException("Reporting period end date cannot be before start date");
+        }
+        request.setName(name);
+    }
+
+    private void validateReportingPeriodForUpdate(Long reportingPeriodId, ReportingPeriodRequest request) {
+        if (request.getName() == null || request.getName().trim().isEmpty()) {
+            throw new OperationNotAllowedException("Reporting period name is required");
+        }
+        if (request.getStartDate() == null || request.getEndDate() == null) {
+            throw new OperationNotAllowedException("Reporting period start date and end date are required");
+        }
+        String name = request.getName().trim();
+        if (reportingPeriodRepository.existsByNameIgnoreCaseAndIdNot(name, reportingPeriodId)) {
+            throw new OperationNotAllowedException("A reporting period with that name already exists");
+        }
+        if (toLocalDate(request.getEndDate()).isBefore(toLocalDate(request.getStartDate()))) {
+            throw new OperationNotAllowedException("Reporting period end date cannot be before start date");
+        }
+        request.setName(name);
+    }
+
+    private LocalDate toLocalDate(Date date) {
+        return date.toInstant().atZone(ZoneId.systemDefault()).toLocalDate();
+    }
+
+    private void deactivateOtherReportingPeriods(Long currentId) {
+        List<ReportingPeriod> periods = reportingPeriodRepository.findAll();
+        for (ReportingPeriod period : periods) {
+            if (currentId == null || !period.getId().equals(currentId)) {
+                period.setActive(false);
+            }
+        }
     }
 
     private enum ReviewStage {

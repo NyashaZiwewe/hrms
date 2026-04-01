@@ -4,9 +4,10 @@ import hrms.employee.model.*;
 
 import lombok.Getter;
 import lombok.Setter;
+import org.springframework.format.annotation.DateTimeFormat;
 
 import javax.validation.constraints.NotNull;
-import java.time.LocalDate;
+import java.util.Date;
 
 @Getter
 @Setter
@@ -22,7 +23,8 @@ public class EmployeeCaseRequest {
     private CaseStatus status;
 
     @NotNull
-    private LocalDate openedDate;
+    @DateTimeFormat(pattern = "dd/MM/yyyy")
+    private Date openedDate;
 
     private String description;
 

@@ -1,12 +1,12 @@
 package hrms.leave.dto;
 
-import hrms.leave.model.LeaveType;
+import com.fasterxml.jackson.annotation.JsonAlias;
 import lombok.Getter;
 import lombok.Setter;
+import org.springframework.format.annotation.DateTimeFormat;
 
-import javax.validation.constraints.FutureOrPresent;
 import javax.validation.constraints.NotNull;
-import java.time.LocalDate;
+import java.util.Date;
 
 @Getter
 @Setter
@@ -18,15 +18,16 @@ public class LeaveRequestInput {
     private Long managerEmployeeId;
 
     @NotNull
-    private LeaveType leaveType;
+    @JsonAlias("leaveType")
+    private String leaveTypeCode;
 
     @NotNull
-    @FutureOrPresent
-    private LocalDate startDate;
+    @DateTimeFormat(pattern = "dd/MM/yyyy")
+    private Date startDate;
 
     @NotNull
-    @FutureOrPresent
-    private LocalDate endDate;
+    @DateTimeFormat(pattern = "dd/MM/yyyy")
+    private Date endDate;
 
     private String reason;
 

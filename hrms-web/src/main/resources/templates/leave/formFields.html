@@ -12,9 +12,9 @@
         </div>
         <div class="col-md-6 form-group">
             <label>Leave Type</label>
-            <select class="form-control" th:field="*{leaveType}">
+            <select class="form-control" th:field="*{leaveTypeCode}">
                 <option value="">-- Select Leave Type --</option>
-                <option th:each="leaveType : ${leaveTypes}" th:value="${leaveType}" th:text="${leaveType}">ANNUAL</option>
+                <option th:each="leaveType : ${leaveTypes}" th:value="${leaveType.code}" th:text="${leaveType.name}">Annual Leave</option>
             </select>
         </div>
         <div class="col-md-6 form-group">
@@ -30,11 +30,11 @@
         </div>
         <div class="col-md-6 form-group">
             <label>Start Date</label>
-            <input type="date" class="form-control" th:field="*{startDate}">
+            <input type="text" class="form-control js-date-picker" th:field="*{startDate}">
         </div>
         <div class="col-md-6 form-group">
             <label>End Date</label>
-            <input type="date" class="form-control" th:field="*{endDate}">
+            <input type="text" class="form-control js-date-picker" th:field="*{endDate}">
         </div>
         <div class="col-md-12 form-group">
             <label>Reason</label>

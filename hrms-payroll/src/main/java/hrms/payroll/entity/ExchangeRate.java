@@ -13,8 +13,10 @@ import javax.persistence.Id;
 import javax.persistence.JoinColumn;
 import javax.persistence.ManyToOne;
 import javax.persistence.Table;
+import javax.persistence.Temporal;
+import javax.persistence.TemporalType;
 import java.math.BigDecimal;
-import java.time.LocalDate;
+import java.util.Date;
 
 @Getter
 @Setter
@@ -32,7 +34,8 @@ public class ExchangeRate {
     private Currency currency;
 
     @Column(nullable = false)
-    private LocalDate effectiveDate;
+    @Temporal(TemporalType.DATE)
+    private Date effectiveDate;
 
     @Column(nullable = false, precision = 18, scale = 6)
     private BigDecimal rateToBase;

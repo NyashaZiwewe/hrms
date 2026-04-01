@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Manage Confirmation Of Employment</title>
+    <link href="../../static/css/bootstrap.min.css" rel="stylesheet" th:href="@{/css/bootstrap.min.css}">
+    <link href="../../static/css/animate.css" rel="stylesheet" th:href="@{/css/animate.css}">
+    <link href="../../static/css/style.css" rel="stylesheet" th:href="@{/css/style.css}">
+</head>
+<body class="fixed-nav">
+<div id="wrapper">
+    <div th:replace="fragments/template :: side-menu"></div>
+    <div id="page-wrapper" class="gray-bg">
+        <div th:replace="fragments/template :: top-navbar"></div>
+        <div th:replace="fragments/template :: page-heading"></div>
+        <div th:replace="fragments/template :: alerts"></div>
+        <div class="wrapper wrapper-content animated fadeInRight">
+            <div class="ibox">
+                <div class="ibox-title">
+                    <h5 th:text="${employee.firstName + ' ' + employee.lastName + ' - Confirmation Of Employment'}">Confirmation Of Employment</h5>
+                </div>
+                <div class="ibox-content">
+                    <form th:action="@{'/employees/' + ${employee.id} + '/employment-confirmations'}" method="post" th:object="${employmentConfirmationRequestInput}">
+                        <input type="hidden" th:field="*{employeeId}">
+                        <div class="row">
+                            <div class="col-md-6 form-group">
+                                <label>Delivery Email</label>
+                                <input class="form-control" th:field="*{deliveryEmail}">
+                            </div>
+                            <div class="col-md-6 form-group">
+                                <label>Purpose</label>
+                                <input class="form-control" th:field="*{purpose}" placeholder="e.g. Visa application, bank, tenancy">
+                            </div>
+                        </div>
+                        <div class="text-right">
+                            <button class="btn btn-primary" type="submit">Request Confirmation Letter</button>
+                        </div>
+                    </form>
+                    <hr>
+                    <div class="table-responsive">
+                        <table class="table table-striped table-bordered">
+                            <thead>
+                            <tr>
+                                <th>Requested Date</th>
+                                <th>Purpose</th>
+                                <th>Delivery Email</th>
+                                <th>Status</th>
+                                <th>Signed By</th>
+                                <th>Signed Date</th>
+                                <th>Document</th>
+                            </tr>
+                            </thead>
+                            <tbody>
+                            <tr th:each="confirmationRequest : ${confirmationRequests}">
+                                <td th:text="${confirmationRequest.requestedDate != null ? confirmationRequest.requestedDate : ''}">01/01/2026</td>
+                                <td th:text="${confirmationRequest.purpose}">Purpose</td>
+                                <td th:text="${confirmationRequest.deliveryEmail}">mail@example.com</td>
+                                <td th:text="${confirmationRequest.status}">REQUESTED</td>
+                                <td th:text="${confirmationRequest.signedByEmployeeId != null ? confirmationSignerNames[confirmationRequest.signedByEmployeeId] : ''}">HR Manager</td>
+                                <td th:text="${confirmationRequest.signedDate != null ? confirmationRequest.signedDate : ''}">01/01/2026</td>
+                                <td>
+                                    <a th:if="${confirmationRequest.signedDocumentFileName != null}"
+                                       th:href="@{'/employees/employment-confirmations/' + ${confirmationRequest.id} + '/download'}">
+                                        Download
+                                    </a>
+                                </td>
+                            </tr>
+                            <tr th:if="${#lists.isEmpty(confirmationRequests)}">
+                                <td colspan="7" class="text-center">No confirmation requests recorded.</td>
+                            </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    <div th:if="${!#lists.isEmpty(confirmationRequests)}">
+                        <h6>HR Manager Sign-Off</h6>
+                        <div class="border rounded p-3 mb-3" th:each="confirmationRequest : ${confirmationRequests}" th:if="${confirmationRequest.status.name() == 'REQUESTED'}">
+                            <form th:action="@{'/employees/' + ${employee.id} + '/employment-confirmations/sign'}" method="post" th:object="${employmentConfirmationApprovalRequest}">
+                                <input type="hidden" th:field="*{requestId}" th:value="${confirmationRequest.id}">
+                                <div class="row">
+                                    <div class="col-md-6 form-group">
+                                        <label>Pending Request</label>
+                                        <input class="form-control"
+                                               th:value="${(confirmationRequest.requestedDate != null ? confirmationRequest.requestedDate : '') + ' - ' + #strings.defaultString(confirmationRequest.purpose, 'General confirmation')}"
+                                               readonly>
+                                    </div>
+                                    <div class="col-md-4 form-group">
+                                        <label>HR Manager</label>
+                                        <select class="form-control" th:field="*{signerEmployeeId}">
+                                            <option value="">Select HR Manager</option>
+                                            <option th:each="hrManager : ${hrManagers}"
+                                                    th:value="${hrManager.id}"
+                                                    th:text="${hrManager.firstName + ' ' + hrManager.lastName + ' - ' + hrManager.jobTitle.name}">
+                                                HR Manager
+                                            </option>
+                                        </select>
+                                    </div>
+                                    <div class="col-md-2 form-group d-flex align-items-end">
+                                        <button class="btn btn-success btn-block" type="submit">Sign</button>
+                                    </div>
+                                </div>
+                            </form>
+                        </div>
+                        <div th:if="${#lists.isEmpty(hrManagers)}" class="alert alert-warning">
+                            No HR manager was found in employee records. Add an employee in Human Resources with a manager title to sign these letters.
+                        </div>
+                    </div>
+                    <div class="text-right">
+                        <a class="btn btn-warning" th:href="@{'/employees/view-employee/' + ${employee.id}}">Back</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div th:replace="fragments/template :: footer"></div>
+    </div>
+</div>
+</body>
+</html>

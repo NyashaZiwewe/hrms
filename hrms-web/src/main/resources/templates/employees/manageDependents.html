@@ -7,6 +7,7 @@
     <link href="../../static/css/bootstrap.min.css" rel="stylesheet" th:href="@{/css/bootstrap.min.css}">
     <link href="../../static/css/animate.css" rel="stylesheet" th:href="@{/css/animate.css}">
     <link href="../../static/css/style.css" rel="stylesheet" th:href="@{/css/style.css}">
+    <link href="../../static/css/plugins/datapicker/datepicker3.css" rel="stylesheet" th:href="@{/css/plugins/datapicker/datepicker3.css}">
 </head>
 <body class="fixed-nav">
 <div id="wrapper">
@@ -23,7 +24,7 @@
                         <div class="row">
                             <div class="col-md-4 form-group"><label>Full Name</label><input class="form-control" th:field="*{fullName}"></div>
                             <div class="col-md-3 form-group"><label>Relationship</label><input class="form-control" th:field="*{relationship}"></div>
-                            <div class="col-md-3 form-group"><label>Date Of Birth</label><input type="date" class="form-control" th:field="*{dateOfBirth}"></div>
+                            <div class="col-md-3 form-group"><label>Date Of Birth</label><input type="text" class="form-control js-date-picker" th:field="*{dateOfBirth}"></div>
                             <div class="col-md-12 form-group"><label>Notes</label><input class="form-control" th:field="*{notes}"></div>
                         </div>
                         <div class="text-right"><button class="btn btn-success" type="submit">Add Dependant</button></div>
@@ -35,7 +36,7 @@
                         <tr th:each="dependent : ${employee.dependents}">
                             <td th:text="${dependent.fullName}">Name</td>
                             <td th:text="${dependent.relationship}">Relationship</td>
-                            <td th:text="${dependent.dateOfBirth}">DOB</td>
+                            <td th:text="${dependent.dateOfBirth != null ?dependent.dateOfBirth : ''}">DOB</td>
                             <td th:text="${dependent.notes}">Notes</td>
                         </tr>
                         <tr th:if="${#lists.isEmpty(employee.dependents)}"><td colspan="4" class="text-center">No dependants recorded.</td></tr>

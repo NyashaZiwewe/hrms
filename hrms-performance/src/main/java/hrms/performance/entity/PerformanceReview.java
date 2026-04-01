@@ -17,7 +17,9 @@ import javax.persistence.Id;
 import javax.persistence.JoinColumn;
 import javax.persistence.ManyToOne;
 import javax.persistence.Table;
-import java.time.LocalDate;
+import javax.persistence.Temporal;
+import javax.persistence.TemporalType;
+import java.util.Date;
 
 @Getter
 @Setter
@@ -35,7 +37,8 @@ public class PerformanceReview {
     private Employee employee;
 
     @Column(nullable = false)
-    private LocalDate reviewDate;
+    @Temporal(TemporalType.DATE)
+    private Date reviewDate;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)

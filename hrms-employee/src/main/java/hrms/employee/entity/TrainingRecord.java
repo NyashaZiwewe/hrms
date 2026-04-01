@@ -16,7 +16,9 @@ import javax.persistence.Id;
 import javax.persistence.JoinColumn;
 import javax.persistence.ManyToOne;
 import javax.persistence.Table;
-import java.time.LocalDate;
+import javax.persistence.Temporal;
+import javax.persistence.TemporalType;
+import java.util.Date;
 
 @Getter
 @Setter
@@ -41,7 +43,8 @@ public class TrainingRecord {
     private String provider;
 
     @Column(nullable = false)
-    private LocalDate completionDate;
+    @Temporal(TemporalType.DATE)
+    private Date completionDate;
 
     @Column(nullable = false)
     private boolean certified;

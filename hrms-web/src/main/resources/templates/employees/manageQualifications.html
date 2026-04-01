@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Manage Qualifications</title>
+    <link href="../../static/css/bootstrap.min.css" rel="stylesheet" th:href="@{/css/bootstrap.min.css}">
+    <link href="../../static/css/animate.css" rel="stylesheet" th:href="@{/css/animate.css}">
+    <link href="../../static/css/style.css" rel="stylesheet" th:href="@{/css/style.css}">
+</head>
+<body class="fixed-nav">
+<div id="wrapper">
+    <div th:replace="fragments/template :: side-menu"></div>
+    <div id="page-wrapper" class="gray-bg">
+        <div th:replace="fragments/template :: top-navbar"></div>
+        <div th:replace="fragments/template :: page-heading"></div>
+        <div th:replace="fragments/template :: alerts"></div>
+        <div class="wrapper wrapper-content animated fadeInRight">
+            <div class="ibox">
+                <div class="ibox-title"><h5 th:text="${employee.firstName + ' ' + employee.lastName + ' - Qualifications'}">Qualifications</h5></div>
+                <div class="ibox-content">
+                    <form th:action="@{'/employees/' + ${employee.id} + '/qualifications'}" method="post" th:object="${qualificationRequest}">
+                        <div class="row">
+                            <div class="col-md-3 form-group">
+                                <label>Education Level</label>
+                                <select class="form-control" th:field="*{educationLevelId}">
+                                    <option value="">Select Education Level</option>
+                                    <option th:each="educationLevel : ${educationLevels}" th:value="${educationLevel.id}" th:text="${educationLevel.name}">Education Level</option>
+                                </select>
+                            </div>
+                            <div class="col-md-3 form-group">
+                                <label>Institution</label>
+                                <select class="form-control" th:field="*{institutionId}">
+                                    <option value="">Select Institution</option>
+                                    <option th:each="institution : ${institutions}" th:value="${institution.id}" th:text="${institution.name}">Institution</option>
+                                </select>
+                            </div>
+                            <div class="col-md-3 form-group">
+                                <label>Qualification</label>
+                                <input class="form-control" th:field="*{qualificationName}">
+                            </div>
+                            <div class="col-md-3 form-group">
+                                <label>Completion Year</label>
+                                <input type="number" class="form-control" th:field="*{completionYear}">
+                            </div>
+                            <div class="col-md-12 form-group">
+                                <label>Period Studied</label>
+                                <input class="form-control" th:field="*{periodStudied}" placeholder="e.g. 2019 - 2022">
+                            </div>
+                        </div>
+                        <div class="text-right"><button class="btn btn-success" type="submit">Add Qualification</button></div>
+                    </form>
+                    <hr>
+                    <table class="table table-striped table-bordered">
+                        <thead><tr><th>Education Level</th><th>Institution</th><th>Qualification</th><th>Completion Year</th><th>Period Studied</th></tr></thead>
+                        <tbody>
+                        <tr th:each="qualification : ${employee.qualifications}">
+                            <td th:text="${qualification.educationLevel.name}">Education Level</td>
+                            <td th:text="${qualification.institution.name}">Institution</td>
+                            <td th:text="${qualification.qualificationName}">Qualification</td>
+                            <td th:text="${qualification.completionYear}">2024</td>
+                            <td th:text="${qualification.periodStudied}">2019 - 2022</td>
+                        </tr>
+                        <tr th:if="${#lists.isEmpty(employee.qualifications)}"><td colspan="5" class="text-center">No qualifications recorded.</td></tr>
+                        </tbody>
+                    </table>
+                    <div class="text-right"><a class="btn btn-warning" th:href="@{'/employees/view-employee/' + ${employee.id}}">Back</a></div>
+                </div>
+            </div>
+        </div>
+        <div th:replace="fragments/template :: footer"></div>
+    </div>
+</div>
+</body>
+</html>

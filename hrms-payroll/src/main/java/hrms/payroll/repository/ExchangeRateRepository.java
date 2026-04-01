@@ -3,7 +3,7 @@ package hrms.payroll.repository;
 import hrms.payroll.entity.ExchangeRate;
 import org.springframework.data.jpa.repository.JpaRepository;
 
-import java.time.LocalDate;
+import java.util.Date;
 import java.util.List;
 import java.util.Optional;
 
@@ -13,6 +13,6 @@ public interface ExchangeRateRepository extends JpaRepository<ExchangeRate, Long
 
     Optional<ExchangeRate> findTopByCurrencyCodeIgnoreCaseAndEffectiveDateLessThanEqualOrderByEffectiveDateDescIdDesc(
             String currencyCode,
-            LocalDate effectiveDate
+            Date effectiveDate
     );
 }

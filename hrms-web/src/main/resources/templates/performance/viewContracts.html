@@ -18,50 +18,12 @@
         <div th:replace="fragments/template :: alerts"></div>
         <div class="wrapper wrapper-content animated fadeInRight">
             <div class="row">
-                <div class="col-lg-3 col-sm-6">
-                    <div class="panel panel-primary metric-panel">
-                        <div class="panel-heading">Contracts</div>
-                        <div class="panel-body">
-                            <h3 class="no-margins" th:text="${analytics.contracts}">0</h3>
-                            <small>Total performance contracts</small>
-                        </div>
-                    </div>
-                </div>
-                <div class="col-lg-3 col-sm-6">
-                    <div class="panel panel-success metric-panel">
-                        <div class="panel-heading">Training Need Goals</div>
-                        <div class="panel-body">
-                            <h3 class="no-margins" th:text="${analytics.goalsWithTrainingNeeds}">0</h3>
-                            <small>Goals with learning needs</small>
-                        </div>
-                    </div>
-                </div>
-                <div class="col-lg-3 col-sm-6">
-                    <div class="panel panel-info metric-panel">
-                        <div class="panel-heading">Action Plans</div>
-                        <div class="panel-body">
-                            <h3 class="no-margins" th:text="${analytics.actionPlans}">0</h3>
-                            <small>Open and captured plans</small>
-                        </div>
-                    </div>
-                </div>
-                <div class="col-lg-3 col-sm-6">
-                    <div class="panel panel-warning metric-panel">
-                        <div class="panel-heading">Improvement Plans</div>
-                        <div class="panel-body">
-                            <h3 class="no-margins" th:text="${analytics.improvementPlans}">0</h3>
-                            <small>PIP records on file</small>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            <div class="row">
                 <div class="col-lg-12">
                     <div class="ibox">
                         <div class="ibox-title">
                             <h5>Performance Contracts</h5>
                             <div class="ibox-tools">
-                                <a class="btn btn-success btn-sm" th:href="@{/performance/add-contract}">Add Contract</a>
+                                <a class="btn btn-success btn-sm" th:href="@{/performance/contracts/add}">Add Contract</a>
                             </div>
                         </div>
                         <div class="ibox-content">
@@ -84,7 +46,7 @@
                                         <td th:text="${contract.status}">DRAFT</td>
                                         <td th:text="${contract.approvalStatus}">NEW</td>
                                         <td th:text="${contract.agreedScore}">0</td>
-                                        <td><a class="btn btn-primary btn-sm" th:href="@{'/performance/view-contract/' + ${contract.id}}">View</a></td>
+                                        <td><a class="btn btn-primary btn-sm" th:href="@{'/performance/contracts/' + ${contract.id}}">View</a></td>
                                     </tr>
                                     <tr th:if="${#lists.isEmpty(contracts)}">
                                         <td colspan="6" class="text-center">No performance contracts available.</td>

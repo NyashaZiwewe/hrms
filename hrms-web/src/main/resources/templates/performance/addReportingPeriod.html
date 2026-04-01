@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Add Reporting Period</title>
+    <link href="../../static/css/bootstrap.min.css" rel="stylesheet" th:href="@{/css/bootstrap.min.css}">
+    <link href="../../static/css/animate.css" rel="stylesheet" th:href="@{/css/animate.css}">
+    <link href="../../static/css/style.css" rel="stylesheet" th:href="@{/css/style.css}">
+    <link href="../../static/css/plugins/datapicker/datepicker3.css" rel="stylesheet" th:href="@{/css/plugins/datapicker/datepicker3.css}">
+</head>
+<body class="fixed-nav">
+<div id="wrapper">
+    <div th:replace="fragments/template :: side-menu"></div>
+    <div id="page-wrapper" class="gray-bg">
+        <div th:replace="fragments/template :: top-navbar"></div>
+        <div th:replace="fragments/template :: page-heading"></div>
+        <div th:replace="fragments/template :: alerts"></div>
+        <div class="wrapper wrapper-content animated fadeInRight">
+            <div class="ibox">
+                <div class="ibox-title"><h5>Add Reporting Period</h5></div>
+                <div class="ibox-content">
+                    <form th:action="@{/performance/reporting-periods/save}" method="post" th:object="${reportingPeriodRequest}">
+                        <div class="row">
+                            <div class="col-md-4 form-group">
+                                <label>Name</label>
+                                <input class="form-control" th:field="*{name}">
+                            </div>
+                            <div class="col-md-4 form-group">
+                                <label>Start Date</label>
+                                <input name="startDate" id="startDate" type="text" class="form-control" th:field="*{startDate}">
+                            </div>
+                            <div class="col-md-4 form-group">
+                                <label>End Date</label>
+                                <input name="endDate" id="endDate" type="text" class="form-control" th:field="*{endDate}">
+                            </div>
+                            <div class="col-md-4 form-group">
+                                <label>Status</label>
+                                <select class="form-control" th:field="*{active}">
+                                    <option th:value="true">ACTIVE</option>
+                                    <option th:value="false">INACTIVE</option>
+                                </select>
+                                <small class="text-muted">Only one reporting period can be active at a time.</small>
+                            </div>
+                        </div>
+                        <div class="text-right">
+                            <a class="btn btn-warning" th:href="@{/performance/reporting-periods}">Cancel</a>
+                            <button class="btn btn-success" type="submit">Save</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+        <div th:replace="fragments/template :: footer"></div>
+    </div>
+</div>
+<script src="../../static/js/plugins/datapicker/bootstrap-datepicker.js"
+        th:src="@{/js/plugins/datapicker/bootstrap-datepicker.js}"></script>
+<script th:inline="javascript">
+    $(document).ready(function () {
+        $('#startDate').datepicker({
+            todayBtn: "linked",
+            format: 'dd/mm/yyyy',
+            keyboardNavigation: false,
+            forceParse: false,
+            calendarWeeks: true,
+            autoclose: true
+        });
+        $('#endDate').datepicker({
+            todayBtn: "linked",
+            format: 'dd/mm/yyyy',
+            keyboardNavigation: false,
+            forceParse: false,
+            calendarWeeks: true,
+            autoclose: true
+        });
+    });
+</script>
+</body>
+</html>

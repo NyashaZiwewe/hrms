@@ -19,6 +19,8 @@ public interface EmployeeReferenceService {
 
     Department createDepartment(DepartmentRequest request);
 
+    Department updateDepartment(Long id, DepartmentRequest request);
+
     List<Department> departments();
 
     Department findDepartment(Long id);
@@ -33,6 +35,8 @@ public interface EmployeeReferenceService {
 
     JobTitle createJobTitle(JobTitleRequest request);
 
+    JobTitle updateJobTitle(Long id, JobTitleRequest request);
+
     List<JobTitle> jobTitles();
 
     JobTitle findJobTitle(Long id);
@@ -41,11 +45,15 @@ public interface EmployeeReferenceService {
 
     EducationLevel createEducationLevel(EducationLevelRequest request);
 
+    EducationLevel updateEducationLevel(Long id, EducationLevelRequest request);
+
     List<EducationLevel> educationLevels();
 
     EducationLevel findEducationLevel(Long id);
 
     EmploymentType createEmploymentType(EmploymentTypeRequest request);
+
+    EmploymentType updateEmploymentType(Long id, EmploymentTypeRequest request);
 
     List<EmploymentType> employmentTypes();
 

@@ -18,7 +18,9 @@ import javax.persistence.JoinColumn;
 import javax.persistence.ManyToOne;
 import javax.persistence.Table;
 import java.math.BigDecimal;
-import java.time.LocalDate;
+import javax.persistence.Temporal;
+import javax.persistence.TemporalType;
+import java.util.Date;
 
 @Getter
 @Setter
@@ -36,7 +38,8 @@ public class OvertimeClaim {
     private Employee employee;
 
     @Column(nullable = false)
-    private LocalDate workDate;
+    @Temporal(TemporalType.DATE)
+    private Date workDate;
 
     @Column(nullable = false, precision = 10, scale = 2)
     private BigDecimal hoursClaimed = BigDecimal.ZERO;
@@ -52,7 +55,8 @@ public class OvertimeClaim {
     private Long decidedByManagerId;
 
     @Column
-    private LocalDate decisionDate;
+    @Temporal(TemporalType.DATE)
+    private Date decisionDate;
 
     @Column(nullable = false)
     private boolean payrollProcessed = false;

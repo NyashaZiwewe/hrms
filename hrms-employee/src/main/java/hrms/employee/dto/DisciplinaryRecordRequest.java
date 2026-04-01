@@ -3,9 +3,10 @@ package hrms.employee.dto;
 import hrms.employee.model.DisciplinaryRecordType;
 import lombok.Getter;
 import lombok.Setter;
+import org.springframework.format.annotation.DateTimeFormat;
 
 import javax.validation.constraints.NotNull;
-import java.time.LocalDate;
+import java.util.Date;
 
 @Getter
 @Setter
@@ -18,11 +19,14 @@ public class DisciplinaryRecordRequest {
     private DisciplinaryRecordType recordType;
 
     @NotNull
-    private LocalDate recordDate;
+    @DateTimeFormat(pattern = "dd/MM/yyyy")
+    private Date recordDate;
 
-    private LocalDate effectiveFrom;
+    @DateTimeFormat(pattern = "dd/MM/yyyy")
+    private Date effectiveFrom;
 
-    private LocalDate effectiveTo;
+    @DateTimeFormat(pattern = "dd/MM/yyyy")
+    private Date effectiveTo;
 
     private String subject;
 

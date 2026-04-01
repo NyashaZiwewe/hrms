@@ -20,7 +20,7 @@ import java.math.BigDecimal;
 @Getter
 @Setter
 @NoArgsConstructor
-@JsonIgnoreProperties({"contract", "perspective", "assignedEmployee"})
+@JsonIgnoreProperties({"contract", "perspective", "strategicObjective", "assignedEmployee"})
 @Entity
 @Table(name = "performance_goals")
 public class PerformanceGoal {
@@ -37,11 +37,12 @@ public class PerformanceGoal {
     @JoinColumn(name = "perspective_id", nullable = false)
     private Perspective perspective;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "strategic_objective_id")
+    private StrategicObjective strategicObjective;
+
     @Column(nullable = false)
     private String name;
-
-    @Column(length = 1500)
-    private String strategicObjective;
 
     @Column(nullable = false, precision = 8, scale = 2)
     private BigDecimal allocatedWeight = BigDecimal.ZERO;

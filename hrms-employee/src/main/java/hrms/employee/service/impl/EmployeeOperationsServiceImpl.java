@@ -44,6 +44,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
+import java.time.ZoneId;
+import java.util.Date;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -113,7 +115,7 @@ public class EmployeeOperationsServiceImpl implements EmployeeOperationsService 
     public DisciplinaryRecord createDisciplinaryRecord(DisciplinaryRecordRequest request) {
         Employee employee = employeeService.findById(request.getEmployeeId());
         if (request.getEffectiveFrom() != null && request.getEffectiveTo() != null
-                && request.getEffectiveTo().isBefore(request.getEffectiveFrom())) {
+                && toLocalDate(request.getEffectiveTo()).isBefore(toLocalDate(request.getEffectiveFrom()))) {
             throw new IllegalArgumentException("Effective to date cannot be before effective from date");
         }
         DisciplinaryRecord record = new DisciplinaryRecord();
@@ -135,7 +137,7 @@ public class EmployeeOperationsServiceImpl implements EmployeeOperationsService 
         Employee employee = employeeService.findById(request.getEmployeeId());
         EmploymentConfirmationRequest confirmationRequest = new EmploymentConfirmationRequest();
         confirmationRequest.setEmployee(employee);
-        confirmationRequest.setRequestedDate(LocalDate.now());
+        confirmationRequest.setRequestedDate(new Date());
         confirmationRequest.setPurpose(request.getPurpose());
         confirmationRequest.setDeliveryEmail(request.getDeliveryEmail() == null || request.getDeliveryEmail().trim().isEmpty()
                 ? employee.getEmail()
@@ -158,7 +160,7 @@ public class EmployeeOperationsServiceImpl implements EmployeeOperationsService 
             throw new OperationNotAllowedException("Only an HR manager can sign employment confirmation letters");
         }
         confirmationRequest.setSignedByEmployeeId(signer.getId());
-        confirmationRequest.setSignedDate(LocalDate.now());
+        confirmationRequest.setSignedDate(new Date());
         confirmationRequest.setStatus(EmploymentConfirmationStatus.SIGNED);
         confirmationRequest.setSignedDocumentPath(request.getSignedDocumentPath());
         confirmationRequest.setSignedDocumentFileName(request.getSignedDocumentFileName());
@@ -258,7 +260,7 @@ public class EmployeeOperationsServiceImpl implements EmployeeOperationsService 
 
     public OffboardingRecord createOffboarding(OffboardingRecordRequest request) {
         Employee employee = employeeService.findById(request.getEmployeeId());
-        if (request.getLastWorkingDate().isBefore(employee.getHireDate())) {
+        if (toLocalDate(request.getLastWorkingDate()).isBefore(toLocalDate(employee.getHireDate()))) {
             throw new IllegalArgumentException("Last working date cannot be before date joined");
         }
         OffboardingRecord record = new OffboardingRecord();
@@ -393,5 +395,9 @@ public class EmployeeOperationsServiceImpl implements EmployeeOperationsService 
                 && employee.getJobTitle() != null
                 && employee.getJobTitle().getName() != null
                 && employee.getJobTitle().getName().toLowerCase().contains("manager");
+    }
+
+    private LocalDate toLocalDate(Date date) {
+        return date == null ? null : date.toInstant().atZone(ZoneId.systemDefault()).toLocalDate();
     }
 }

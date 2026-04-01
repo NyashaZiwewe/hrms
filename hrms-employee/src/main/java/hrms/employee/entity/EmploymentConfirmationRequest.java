@@ -16,7 +16,9 @@ import javax.persistence.Id;
 import javax.persistence.JoinColumn;
 import javax.persistence.ManyToOne;
 import javax.persistence.Table;
-import java.time.LocalDate;
+import javax.persistence.Temporal;
+import javax.persistence.TemporalType;
+import java.util.Date;
 
 @Getter
 @Setter
@@ -34,7 +36,8 @@ public class EmploymentConfirmationRequest {
     private Employee employee;
 
     @Column(nullable = false)
-    private LocalDate requestedDate;
+    @Temporal(TemporalType.DATE)
+    private Date requestedDate;
 
     @Column(length = 1000)
     private String purpose;
@@ -50,7 +53,8 @@ public class EmploymentConfirmationRequest {
     private Long signedByEmployeeId;
 
     @Column
-    private LocalDate signedDate;
+    @Temporal(TemporalType.DATE)
+    private Date signedDate;
 
     @Column
     private String signedDocumentPath;

@@ -5,7 +5,7 @@ import lombok.Builder;
 import lombok.Getter;
 
 import java.math.BigDecimal;
-import java.time.LocalDate;
+import java.util.Date;
 import java.util.List;
 
 @Getter
@@ -16,9 +16,9 @@ public class PayrollRunResponse {
     private String payrollCode;
     private String currencyCode;
     private String baseCurrencyCode;
-    private LocalDate payDate;
-    private LocalDate periodStart;
-    private LocalDate periodEnd;
+    private Date payDate;
+    private Date periodStart;
+    private Date periodEnd;
     private BigDecimal grossPay;
     private BigDecimal totalDeductions;
     private BigDecimal netPay;

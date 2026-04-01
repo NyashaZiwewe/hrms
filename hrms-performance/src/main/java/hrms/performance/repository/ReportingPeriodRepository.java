@@ -8,4 +8,10 @@ import java.util.Optional;
 public interface ReportingPeriodRepository extends JpaRepository<ReportingPeriod, Long> {
 
     Optional<ReportingPeriod> findByActiveTrue();
+
+    boolean existsByActiveTrueAndIdNot(Long id);
+
+    boolean existsByNameIgnoreCase(String name);
+
+    boolean existsByNameIgnoreCaseAndIdNot(String name, Long id);
 }

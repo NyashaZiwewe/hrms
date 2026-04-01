@@ -32,9 +32,9 @@
                                     </div>
                                     <div class="col-md-4 form-group">
                                         <label>Leave Type</label>
-                                        <select class="form-control" th:field="*{leaveType}">
+                                        <select class="form-control" th:field="*{leaveTypeCode}">
                                             <option value="">Select Leave Type</option>
-                                            <option th:each="leaveType : ${leaveTypes}" th:value="${leaveType}" th:text="${leaveType}">Type</option>
+                                            <option th:each="leaveType : ${leaveTypes}" th:value="${leaveType.code}" th:text="${leaveType.name}">Type</option>
                                         </select>
                                     </div>
                                     <div class="col-md-4 form-group">
@@ -67,9 +67,9 @@
                                     <tbody>
                                     <tr th:each="leaveSaleRequest : ${leaveSaleRequests}">
                                         <td th:text="${leaveSaleRequest.employee.firstName + ' ' + leaveSaleRequest.employee.lastName}">Employee</td>
-                                        <td th:text="${leaveSaleRequest.leaveType}">VACATION</td>
+                                        <td th:text="${leaveSaleRequest.leaveType.name}">Vacation Leave</td>
                                         <td th:text="${leaveSaleRequest.daysToSell}">0</td>
-                                        <td th:text="${leaveSaleRequest.requestDate}">2026-01-01</td>
+                                        <td th:text="${leaveSaleRequest.requestDate != null ? leaveSaleRequest.requestDate : ''}">01/01/2026</td>
                                         <td th:text="${leaveSaleRequest.status}">PENDING</td>
                                         <td th:text="${leaveSaleRequest.reason}">Reason</td>
                                         <td>

@@ -9,6 +9,7 @@ import org.springframework.context.annotation.Configuration;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.time.ZoneId;
 
 @Configuration
 public class PayrollReferenceDataInitializer {
@@ -54,7 +55,7 @@ public class PayrollReferenceDataInitializer {
         }
         ExchangeRateRequest request = new ExchangeRateRequest();
         request.setCurrencyCode(currencyCode);
-        request.setEffectiveDate(effectiveDate);
+        request.setEffectiveDate(java.util.Date.from(effectiveDate.atStartOfDay(ZoneId.systemDefault()).toInstant()));
         request.setRateToBase(rateToBase);
         request.setNotes(notes);
         payrollService.saveExchangeRate(request);

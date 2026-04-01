@@ -2,15 +2,12 @@ package hrms.leave.entity;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import hrms.employee.entity.Employee;
-import hrms.leave.model.LeaveType;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 import javax.persistence.Column;
 import javax.persistence.Entity;
-import javax.persistence.EnumType;
-import javax.persistence.Enumerated;
 import javax.persistence.FetchType;
 import javax.persistence.GeneratedValue;
 import javax.persistence.GenerationType;
@@ -35,8 +32,8 @@ public class LeaveBalance {
     @JoinColumn(name = "employee_id", nullable = false)
     private Employee employee;
 
-    @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
+    @ManyToOne(fetch = FetchType.EAGER, optional = false)
+    @JoinColumn(name = "leave_type", referencedColumnName = "code", nullable = false)
     private LeaveType leaveType;
 
     @Column(nullable = false)

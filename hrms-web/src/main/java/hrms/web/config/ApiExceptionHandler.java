@@ -4,6 +4,8 @@ import hrms.common.dto.CommonResponse;
 import hrms.common.exception.DuplicateResourceException;
 import hrms.common.exception.OperationNotAllowedException;
 import hrms.common.exception.ResourceNotFoundException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -23,6 +25,8 @@ import java.util.stream.Collectors;
 
 @RestControllerAdvice
 public class ApiExceptionHandler extends ResponseEntityExceptionHandler {
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(ApiExceptionHandler.class);
 
     @ExceptionHandler(ResourceNotFoundException.class)
     public ResponseEntity<CommonResponse<Void>> handleNotFound(ResourceNotFoundException exception) {
@@ -55,6 +59,7 @@ public class ApiExceptionHandler extends ResponseEntityExceptionHandler {
 
     @ExceptionHandler(Exception.class)
     public ResponseEntity<CommonResponse<Void>> handleUnexpected(Exception exception) {
+        LOGGER.error("Unhandled API exception", exception);
         return buildResponse(HttpStatus.INTERNAL_SERVER_ERROR,
                 "Something went wrong while processing your request. Please try again.");
     }

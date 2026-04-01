@@ -4,9 +4,10 @@ import hrms.employee.model.*;
 
 import lombok.Getter;
 import lombok.Setter;
+import org.springframework.format.annotation.DateTimeFormat;
 
 import javax.validation.constraints.NotNull;
-import java.time.LocalDate;
+import java.util.Date;
 
 @Getter
 @Setter
@@ -16,7 +17,8 @@ public class OffboardingRecordRequest {
     private Long employeeId;
 
     @NotNull
-    private LocalDate lastWorkingDate;
+    @DateTimeFormat(pattern = "dd/MM/yyyy")
+    private Date lastWorkingDate;
 
     private boolean exitInterviewCompleted;
 

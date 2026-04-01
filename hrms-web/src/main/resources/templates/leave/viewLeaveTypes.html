@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Leave Types</title>
+    <link href="../../static/css/bootstrap.min.css" rel="stylesheet" th:href="@{/css/bootstrap.min.css}">
+    <link href="../../static/css/animate.css" rel="stylesheet" th:href="@{/css/animate.css}">
+    <link href="../../static/css/style.css" rel="stylesheet" th:href="@{/css/style.css}">
+</head>
+<body class="fixed-nav">
+<div id="wrapper">
+    <div th:replace="fragments/template :: side-menu"></div>
+    <div id="page-wrapper" class="gray-bg">
+        <div th:replace="fragments/template :: top-navbar"></div>
+        <div th:replace="fragments/template :: page-heading"></div>
+        <div th:replace="fragments/template :: alerts"></div>
+        <div class="wrapper wrapper-content animated fadeInRight">
+            <div class="ibox">
+                <div class="ibox-title"><h5>Leave Types</h5></div>
+                <div class="ibox-content">
+                    <form th:action="@{/leave/types/save}" method="post" th:object="${leaveTypeRequest}">
+                        <div class="row">
+                            <div class="col-md-2 form-group"><label>Code</label><input class="form-control" th:field="*{code}"></div>
+                            <div class="col-md-3 form-group"><label>Name</label><input class="form-control" th:field="*{name}"></div>
+                            <div class="col-md-2 form-group"><label>Monthly Entitlement</label><input type="number" min="0" class="form-control" th:field="*{monthlyEntitlement}"></div>
+                            <div class="col-md-2 form-group"><label>Tracks Balance</label><select class="form-control" th:field="*{balanceTracked}"><option th:value="true">Yes</option><option th:value="false">No</option></select></div>
+                            <div class="col-md-2 form-group"><label>Allow Sale</label><select class="form-control" th:field="*{leaveSaleAllowed}"><option th:value="true">Yes</option><option th:value="false">No</option></select></div>
+                            <div class="col-md-1 form-group"><label>Active</label><select class="form-control" th:field="*{active}"><option th:value="true">Yes</option><option th:value="false">No</option></select></div>
+                        </div>
+                        <div class="text-right"><button class="btn btn-success" type="submit">Save Leave Type</button></div>
+                    </form>
+                    <hr>
+                    <table class="table table-striped table-bordered">
+                        <thead><tr><th>Code</th><th>Name</th><th>Entitlement</th><th>Tracks Balance</th><th>Allow Sale</th><th>Active</th><th></th></tr></thead>
+                        <tbody>
+                        <tr th:each="leaveType : ${leaveTypes}">
+                            <td th:text="${leaveType.code}">ANNUAL</td>
+                            <td th:text="${leaveType.name}">Annual Leave</td>
+                            <td th:text="${leaveType.monthlyEntitlement}">2</td>
+                            <td th:text="${leaveType.balanceTracked}">true</td>
+                            <td th:text="${leaveType.leaveSaleAllowed}">true</td>
+                            <td th:text="${leaveType.active}">true</td>
+                            <td>
+                                <a class="btn btn-primary btn-sm" th:href="@{'/leave/types/' + ${leaveType.id} + '/edit'}">Edit</a>
+                                <form th:action="@{'/leave/types/' + ${leaveType.id} + '/delete'}" method="post" style="display:inline;">
+                                    <button class="btn btn-danger btn-sm" type="submit">Delete</button>
+                                </form>
+                            </td>
+                        </tr>
+                        <tr th:if="${#lists.isEmpty(leaveTypes)}"><td colspan="7" class="text-center">No leave types available.</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+        <div th:replace="fragments/template :: footer"></div>
+    </div>
+</div>
+</body>
+</html>

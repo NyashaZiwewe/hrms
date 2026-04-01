@@ -11,6 +11,7 @@ import hrms.payroll.dto.PayrollProcessRequest;
 import hrms.payroll.entity.CompensationPackage;
 import hrms.payroll.service.PayrollService;
 import hrms.web.constants.Pages;
+import hrms.web.util.PortletUtils;
 import org.springframework.stereotype.Controller;
 import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -23,7 +24,9 @@ import org.springframework.web.servlet.ModelAndView;
 import javax.validation.Valid;
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.time.ZoneId;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
 
 @Controller
@@ -80,6 +83,7 @@ public class PayrollViewController {
             modelAndView.addObject("employees", employeeService.findAll());
             modelAndView.addObject("currencies", payrollService.listCurrencies());
             modelAndView.addObject("baseCurrency", payrollService.getBaseCurrency());
+            PortletUtils.addBindingErrors(modelAndView, bindingResult);
             return modelAndView;
         }
         return new ModelAndView("redirect:/payroll/view-run/" + payrollService.processPayroll(payrollProcessRequest).getPayrollRunId());
@@ -113,6 +117,7 @@ public class PayrollViewController {
             populatePage(modelAndView, "Add Compensation Package");
             modelAndView.addObject("employees", employeeService.findAll());
             modelAndView.addObject("currencies", payrollService.listCurrencies());
+            PortletUtils.addBindingErrors(modelAndView, bindingResult);
             return modelAndView;
         }
         CompensationPackage saved = payrollService.saveCompensationPackage(compensationPackageRequest);
@@ -163,6 +168,7 @@ public class PayrollViewController {
             modelAndView.addObject("compensationPackageId", compensationPackageId);
             modelAndView.addObject("employees", employeeService.findAll());
             modelAndView.addObject("currencies", payrollService.listCurrencies());
+            PortletUtils.addBindingErrors(modelAndView, bindingResult);
             return modelAndView;
         }
         payrollService.saveCompensationPackage(compensationPackageRequest);
@@ -191,6 +197,7 @@ public class PayrollViewController {
             ModelAndView modelAndView = new ModelAndView(Pages.VIEW_PAYROLL_CURRENCIES);
             populatePage(modelAndView, "Payroll Currencies");
             modelAndView.addObject("currencies", payrollService.listCurrencies());
+            PortletUtils.addBindingErrors(modelAndView, bindingResult);
             return modelAndView;
         }
         payrollService.saveCurrency(currencyRequest);
@@ -202,7 +209,7 @@ public class PayrollViewController {
         ModelAndView modelAndView = new ModelAndView(Pages.VIEW_PAYROLL_EXCHANGE_RATES);
         populatePage(modelAndView, "Exchange Rates");
         ExchangeRateRequest request = new ExchangeRateRequest();
-        request.setEffectiveDate(DateUtils.today());
+        request.setEffectiveDate(toDate(DateUtils.today()));
         modelAndView.addObject("exchangeRateRequest", request);
         modelAndView.addObject("currencies", payrollService.listCurrencies());
         modelAndView.addObject("exchangeRates", payrollService.listExchangeRates());
@@ -219,6 +226,7 @@ public class PayrollViewController {
             modelAndView.addObject("currencies", payrollService.listCurrencies());
             modelAndView.addObject("exchangeRates", payrollService.listExchangeRates());
             modelAndView.addObject("baseCurrency", payrollService.getBaseCurrency());
+            PortletUtils.addBindingErrors(modelAndView, bindingResult);
             return modelAndView;
         }
         payrollService.saveExchangeRate(exchangeRateRequest);
@@ -230,9 +238,9 @@ public class PayrollViewController {
         LocalDate today = DateUtils.today();
         request.setPayrollCode("PR-" + today);
         request.setCurrencyCode(payrollService.getBaseCurrency().getCode());
-        request.setPayDate(today);
-        request.setPeriodStart(today.withDayOfMonth(1));
-        request.setPeriodEnd(today);
+        request.setPayDate(toDate(today));
+        request.setPeriodStart(toDate(today.withDayOfMonth(1)));
+        request.setPeriodEnd(toDate(today));
         List<PayrollEmployeeInput> employeeInputs = new ArrayList<PayrollEmployeeInput>();
         for (Employee employee : employeeService.findAll()) {
             PayrollEmployeeInput input = new PayrollEmployeeInput();
@@ -251,5 +259,9 @@ public class PayrollViewController {
         modelAndView.addObject("pageDomain", "Payroll Management");
         modelAndView.addObject("pageName", "Payroll");
         modelAndView.addObject("pageTitle", title);
+    }
+
+    private Date toDate(LocalDate localDate) {
+        return localDate == null ? null : Date.from(localDate.atStartOfDay(ZoneId.systemDefault()).toInstant());
     }
 }

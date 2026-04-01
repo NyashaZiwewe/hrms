@@ -13,8 +13,10 @@ import javax.persistence.GeneratedValue;
 import javax.persistence.GenerationType;
 import javax.persistence.Id;
 import javax.persistence.Table;
+import javax.persistence.Temporal;
+import javax.persistence.TemporalType;
 import java.math.BigDecimal;
-import java.time.LocalDate;
+import java.util.Date;
 
 @Getter
 @Setter
@@ -37,13 +39,16 @@ public class PayrollRun {
     private String baseCurrencyCode;
 
     @Column(nullable = false)
-    private LocalDate payDate;
+    @Temporal(TemporalType.DATE)
+    private Date payDate;
 
     @Column(nullable = false)
-    private LocalDate periodStart;
+    @Temporal(TemporalType.DATE)
+    private Date periodStart;
 
     @Column(nullable = false)
-    private LocalDate periodEnd;
+    @Temporal(TemporalType.DATE)
+    private Date periodEnd;
 
     @Column(nullable = false, precision = 14, scale = 2)
     private BigDecimal grossPay = BigDecimal.ZERO;

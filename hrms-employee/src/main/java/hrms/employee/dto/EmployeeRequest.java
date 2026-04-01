@@ -2,22 +2,21 @@ package hrms.employee.dto;
 
 import hrms.employee.model.*;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import lombok.Getter;
 import lombok.Setter;
 
 import javax.validation.constraints.Email;
 import javax.validation.constraints.NotBlank;
 import javax.validation.constraints.NotNull;
-import java.math.BigDecimal;
-import java.util.ArrayList;
-import java.util.List;
-import java.time.LocalDate;
+import java.util.Date;
+import org.springframework.format.annotation.DateTimeFormat;
 
 @Getter
 @Setter
+@JsonIgnoreProperties(ignoreUnknown = true)
 public class EmployeeRequest {
 
-    @NotBlank
     private String employeeNumber;
 
     @NotBlank
@@ -34,13 +33,7 @@ public class EmployeeRequest {
 
     private String phoneNumber;
 
-    private String address;
-
     private String nationalId;
-
-    private String emergencyContactName;
-
-    private String emergencyContactPhone;
 
     private Long jobTitleId;
 
@@ -53,22 +46,20 @@ public class EmployeeRequest {
     private String department;
 
     @NotNull
-    private LocalDate hireDate;
+    @DateTimeFormat(pattern = "dd/MM/yyyy")
+    private Date hireDate;
 
     private String contractDocumentPath;
 
     private String contractFileName;
 
-    private LocalDate terminationDate;
+    @DateTimeFormat(pattern = "dd/MM/yyyy")
+    private Date terminationDate;
 
     private Long managerEmployeeId;
 
     @NotBlank
     private String preferredCurrency = "USD";
-
-    private BigDecimal monthlySalary = BigDecimal.ZERO;
-
-    private BigDecimal hourlyRate = BigDecimal.ZERO;
 
     private String employmentHistory;
 
@@ -77,12 +68,4 @@ public class EmployeeRequest {
     private String performanceSummary;
 
     private EmploymentStatus status = EmploymentStatus.ACTIVE;
-
-    private List<EmployeeQualificationRequest> qualifications;
-
-    private List<EmployeeDependentRequest> dependents;
-
-    private List<EmployeeDisabilityRequest> disabilities;
-
-    private List<EmployeeRelatedContactRequest> relatedContacts;
 }

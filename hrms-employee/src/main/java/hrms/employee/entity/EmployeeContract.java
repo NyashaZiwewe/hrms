@@ -14,7 +14,9 @@ import javax.persistence.Id;
 import javax.persistence.JoinColumn;
 import javax.persistence.ManyToOne;
 import javax.persistence.Table;
-import java.time.LocalDate;
+import javax.persistence.Temporal;
+import javax.persistence.TemporalType;
+import java.util.Date;
 
 @Getter
 @Setter
@@ -36,10 +38,12 @@ public class EmployeeContract {
     private String contractName;
 
     @Column
-    private LocalDate startDate;
+    @Temporal(TemporalType.DATE)
+    private Date startDate;
 
     @Column
-    private LocalDate endDate;
+    @Temporal(TemporalType.DATE)
+    private Date endDate;
 
     @Column
     private String documentPath;

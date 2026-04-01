@@ -10,7 +10,7 @@ import hrms.leave.entity.LeaveRequest;
 import hrms.leave.entity.LeaveSaleRequest;
 import hrms.leave.entity.OvertimeClaim;
 import hrms.leave.model.LeaveStatus;
-import hrms.leave.model.LeaveType;
+import hrms.leave.entity.LeaveType;
 import hrms.leave.repository.LeaveRequestRepository;
 import hrms.leave.repository.LeaveSaleRequestRepository;
 import hrms.leave.repository.OvertimeClaimRepository;
@@ -47,7 +47,9 @@ import org.springframework.transaction.annotation.Transactional;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDate;
+import java.time.ZoneId;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
 import java.util.Optional;
 
@@ -133,7 +135,10 @@ public class PayrollServiceImpl implements PayrollService {
     }
 
     public PayrollRunResponse processPayroll(PayrollProcessRequest request) {
-        if (request.getPeriodEnd().isBefore(request.getPeriodStart())) {
+        LocalDate payDate = toLocalDate(request.getPayDate());
+        LocalDate periodStart = toLocalDate(request.getPeriodStart());
+        LocalDate periodEnd = toLocalDate(request.getPeriodEnd());
+        if (periodEnd.isBefore(periodStart)) {
             throw new IllegalArgumentException("Payroll period end date cannot be before start date");
         }
 
@@ -364,13 +369,13 @@ public class PayrollServiceImpl implements PayrollService {
         if (currency.get().isBaseCurrency()) {
             ExchangeRate baseRate = new ExchangeRate();
             baseRate.setCurrency(currency.get());
-            baseRate.setEffectiveDate(effectiveDate);
+            baseRate.setEffectiveDate(java.sql.Date.valueOf(effectiveDate));
             baseRate.setRateToBase(BigDecimal.ONE.setScale(6, RoundingMode.HALF_UP));
             baseRate.setNotes("Base currency");
             return Optional.of(baseRate);
         }
         return exchangeRateRepository.findTopByCurrencyCodeIgnoreCaseAndEffectiveDateLessThanEqualOrderByEffectiveDateDescIdDesc(
-                code, effectiveDate
+                code, java.sql.Date.valueOf(effectiveDate)
         );
     }
 
@@ -379,30 +384,31 @@ public class PayrollServiceImpl implements PayrollService {
                                     CompensationPackage compensationPackage,
                                     PayrollEmployeeInput employeeInput,
                                     PayrollProcessRequest request) {
-        BigDecimal conversionRate = conversionRate(compensationPackage.getCurrencyCode(), payrollRun.getCurrencyCode(), request.getPayDate());
+        LocalDate payDate = toLocalDate(request.getPayDate());
+        BigDecimal conversionRate = conversionRate(compensationPackage.getCurrencyCode(), payrollRun.getCurrencyCode(), payDate);
         BigDecimal convertedBaseSalary = convertAmount(compensationPackage.getBaseMonthlySalary(),
-                compensationPackage.getCurrencyCode(), payrollRun.getCurrencyCode(), request.getPayDate());
+                compensationPackage.getCurrencyCode(), payrollRun.getCurrencyCode(), payDate);
         BigDecimal hourlyRate = convertAmount(compensationPackage.getHourlyRate(),
-                compensationPackage.getCurrencyCode(), payrollRun.getCurrencyCode(), request.getPayDate());
+                compensationPackage.getCurrencyCode(), payrollRun.getCurrencyCode(), payDate);
         BigDecimal regularPay = convertedBaseSalary.compareTo(BigDecimal.ZERO) > 0
                 ? convertedBaseSalary.divide(compensationPackage.getStandardMonthlyHours(), 2, RoundingMode.HALF_UP)
                 .multiply(employeeInput.getHoursWorked())
                 : hourlyRate.multiply(employeeInput.getHoursWorked());
         ApprovedOvertime approvedOvertime = approvedOvertime(employee, request);
         ApprovedLeaveSale approvedLeaveSale = approvedLeaveSale(employee, compensationPackage, request,
-                payrollRun.getCurrencyCode(), request.getPayDate());
+                payrollRun.getCurrencyCode(), payDate);
         BigDecimal totalOvertimeHours = employeeInput.getOvertimeHours().add(approvedOvertime.hours);
         BigDecimal overtimePay = hourlyRate.multiply(totalOvertimeHours).multiply(OVERTIME_MULTIPLIER);
         BigDecimal unpaidLeaveDeduction = unpaidLeaveDeduction(employee, compensationPackage, request,
-                payrollRun.getCurrencyCode(), request.getPayDate());
+                payrollRun.getCurrencyCode(), payDate);
         BigDecimal bonus = convertAmount(employeeInput.getBonus(), compensationPackage.getCurrencyCode(),
-                payrollRun.getCurrencyCode(), request.getPayDate());
+                payrollRun.getCurrencyCode(), payDate);
         BigDecimal fixedAllowance = convertAmount(compensationPackage.getFixedAllowance(), compensationPackage.getCurrencyCode(),
-                payrollRun.getCurrencyCode(), request.getPayDate());
+                payrollRun.getCurrencyCode(), payDate);
         BigDecimal benefitsDeduction = convertAmount(compensationPackage.getFixedBenefitsDeduction(),
-                compensationPackage.getCurrencyCode(), payrollRun.getCurrencyCode(), request.getPayDate());
+                compensationPackage.getCurrencyCode(), payrollRun.getCurrencyCode(), payDate);
         BigDecimal otherDeductions = convertAmount(employeeInput.getOtherDeductions(), compensationPackage.getCurrencyCode(),
-                payrollRun.getCurrencyCode(), request.getPayDate());
+                payrollRun.getCurrencyCode(), payDate);
         BigDecimal grossPay = scale(regularPay
                 .add(overtimePay)
                 .add(approvedLeaveSale.amount)
@@ -449,12 +455,16 @@ public class PayrollServiceImpl implements PayrollService {
                                             PayrollProcessRequest request,
                                             String targetCurrencyCode,
                                             LocalDate conversionDate) {
+        LocalDate periodStart = toLocalDate(request.getPeriodStart());
+        LocalDate periodEnd = toLocalDate(request.getPeriodEnd());
         BigDecimal unpaidDays = BigDecimal.ZERO;
         List<LeaveRequest> leaveRequests = leaveRequestRepository.findByEmployeeIdAndStatus(employee.getId(), LeaveStatus.APPROVED);
         for (LeaveRequest leaveRequest : leaveRequests) {
-            boolean overlaps = !leaveRequest.getEndDate().isBefore(request.getPeriodStart())
-                    && !leaveRequest.getStartDate().isAfter(request.getPeriodEnd());
-            if (leaveRequest.getLeaveType() == LeaveType.UNPAID && overlaps) {
+            boolean overlaps = !toLocalDate(leaveRequest.getEndDate()).isBefore(periodStart)
+                    && !toLocalDate(leaveRequest.getStartDate()).isAfter(periodEnd);
+            if (leaveRequest.getLeaveType() != null
+                    && "UNPAID".equalsIgnoreCase(leaveRequest.getLeaveType().getCode())
+                    && overlaps) {
                 unpaidDays = unpaidDays.add(new BigDecimal(leaveRequest.getDaysRequested()));
             }
         }
@@ -470,14 +480,16 @@ public class PayrollServiceImpl implements PayrollService {
     }
 
     private ApprovedOvertime approvedOvertime(Employee employee, PayrollProcessRequest request) {
+        LocalDate periodStart = toLocalDate(request.getPeriodStart());
+        LocalDate periodEnd = toLocalDate(request.getPeriodEnd());
         BigDecimal approvedHours = BigDecimal.ZERO;
         List<OvertimeClaim> approvedClaims = new ArrayList<OvertimeClaim>();
         for (OvertimeClaim claim : overtimeClaimRepository.findByStatusAndPayrollProcessed(LeaveStatus.APPROVED, false)) {
             if (!claim.getEmployee().getId().equals(employee.getId())) {
                 continue;
             }
-            boolean overlaps = !claim.getWorkDate().isBefore(request.getPeriodStart())
-                    && !claim.getWorkDate().isAfter(request.getPeriodEnd());
+            boolean overlaps = !toLocalDate(claim.getWorkDate()).isBefore(periodStart)
+                    && !toLocalDate(claim.getWorkDate()).isAfter(periodEnd);
             if (overlaps) {
                 approvedHours = approvedHours.add(claim.getHoursClaimed());
                 approvedClaims.add(claim);
@@ -491,6 +503,8 @@ public class PayrollServiceImpl implements PayrollService {
                                                 PayrollProcessRequest request,
                                                 String targetCurrencyCode,
                                                 LocalDate conversionDate) {
+        LocalDate periodStart = toLocalDate(request.getPeriodStart());
+        LocalDate periodEnd = toLocalDate(request.getPeriodEnd());
         int daysSold = 0;
         List<LeaveSaleRequest> approvedRequests = new ArrayList<LeaveSaleRequest>();
         for (LeaveSaleRequest leaveSaleRequest : leaveSaleRequestRepository.findByStatusAndPayrollProcessed(LeaveStatus.APPROVED, false)) {
@@ -500,8 +514,8 @@ public class PayrollServiceImpl implements PayrollService {
             if (leaveSaleRequest.getDecisionDate() == null) {
                 continue;
             }
-            boolean overlaps = !leaveSaleRequest.getDecisionDate().isBefore(request.getPeriodStart())
-                    && !leaveSaleRequest.getDecisionDate().isAfter(request.getPeriodEnd());
+            boolean overlaps = !toLocalDate(leaveSaleRequest.getDecisionDate()).isBefore(periodStart)
+                    && !toLocalDate(leaveSaleRequest.getDecisionDate()).isAfter(periodEnd);
             if (overlaps) {
                 daysSold += leaveSaleRequest.getDaysToSell();
                 approvedRequests.add(leaveSaleRequest);
@@ -630,6 +644,10 @@ public class PayrollServiceImpl implements PayrollService {
                 .entries(entryResponses)
                 .journalEntries(journalResponses)
                 .build();
+    }
+
+    private LocalDate toLocalDate(Date date) {
+        return date == null ? null : date.toInstant().atZone(ZoneId.systemDefault()).toLocalDate();
     }
 
     private BigDecimal convertAmount(BigDecimal amount,

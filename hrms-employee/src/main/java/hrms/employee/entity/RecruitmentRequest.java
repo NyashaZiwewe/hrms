@@ -14,7 +14,9 @@ import javax.persistence.GeneratedValue;
 import javax.persistence.GenerationType;
 import javax.persistence.Id;
 import javax.persistence.Table;
-import java.time.LocalDate;
+import javax.persistence.Temporal;
+import javax.persistence.TemporalType;
+import java.util.Date;
 
 @Getter
 @Setter
@@ -37,7 +39,8 @@ public class RecruitmentRequest {
     private Integer requestedHeadcount;
 
     @Column(nullable = false)
-    private LocalDate requestDate;
+    @Temporal(TemporalType.DATE)
+    private Date requestDate;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)

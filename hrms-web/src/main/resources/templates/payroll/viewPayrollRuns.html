@@ -44,7 +44,7 @@
                                     <tr th:each="run : ${payrollRuns}">
                                         <td th:text="${run.payrollCode}">PR001</td>
                                         <td th:text="${run.currencyCode}">USD</td>
-                                        <td th:text="${run.periodStart + ' to ' + run.periodEnd}">Period</td>
+                                        <td th:text="${(run.periodStart != null ? run.periodStart : '') + ' to ' + (run.periodEnd != null ? run.periodEnd : '')}">Period</td>
                                         <td th:text="${run.grossPay}">0.00</td>
                                         <td th:text="${run.netPay}">0.00</td>
                                         <td th:text="${run.status}">DRAFT</td>

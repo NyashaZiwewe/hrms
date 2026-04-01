@@ -2,12 +2,13 @@ package hrms.leave.dto;
 
 import lombok.Getter;
 import lombok.Setter;
+import org.springframework.format.annotation.DateTimeFormat;
 
 import javax.validation.constraints.DecimalMin;
 import javax.validation.constraints.NotNull;
 import javax.validation.constraints.PastOrPresent;
 import java.math.BigDecimal;
-import java.time.LocalDate;
+import java.util.Date;
 
 @Getter
 @Setter
@@ -18,7 +19,8 @@ public class OvertimeClaimInput {
 
     @NotNull
     @PastOrPresent
-    private LocalDate workDate;
+    @DateTimeFormat(pattern = "dd/MM/yyyy")
+    private Date workDate;
 
     @NotNull
     @DecimalMin("0.5")

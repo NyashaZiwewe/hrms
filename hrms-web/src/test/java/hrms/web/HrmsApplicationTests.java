@@ -263,6 +263,20 @@ class HrmsApplicationTests {
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.name").value("Customer"));
 
+        String strategicObjectivePayload = "{\n" +
+                "  \"reportingPeriodId\": 1,\n" +
+                "  \"perspectiveId\": 1,\n" +
+                "  \"name\": \"Increase responsiveness\",\n" +
+                "  \"description\": \"Improve turnaround times across the organisation\",\n" +
+                "  \"active\": true\n" +
+                "}";
+
+        mockMvc.perform(post("/api/performance/strategic-objectives")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(strategicObjectivePayload))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.name").value("Increase responsiveness"));
+
         String contractPayload = "{\n" +
                 "  \"employeeId\": 2,\n" +
                 "  \"reportingPeriodId\": 1,\n" +
@@ -277,9 +291,8 @@ class HrmsApplicationTests {
 
         String goalPayload = "{\n" +
                 "  \"contractId\": 1,\n" +
-                "  \"perspectiveId\": 1,\n" +
+                "  \"strategicObjectiveId\": 1,\n" +
                 "  \"name\": \"Improve SLA turnaround\",\n" +
-                "  \"strategicObjective\": \"Increase responsiveness\",\n" +
                 "  \"allocatedWeight\": 40.0,\n" +
                 "  \"measure\": \"Average turnaround time\",\n" +
                 "  \"targetValue\": \"24 hours\",\n" +

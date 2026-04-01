@@ -8,4 +8,6 @@ import java.util.List;
 public interface PerformanceContractRepository extends JpaRepository<PerformanceContract, Long> {
 
     List<PerformanceContract> findByEmployeeId(Long employeeId);
+
+    boolean existsByReportingPeriodId(Long reportingPeriodId);
 }

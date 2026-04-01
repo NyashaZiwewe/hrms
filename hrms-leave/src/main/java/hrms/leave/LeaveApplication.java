@@ -11,6 +11,7 @@ import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
 @ComponentScan(basePackages = {
         "hrms.audit.service",
         "hrms.employee.service",
+        "hrms.leave.config",
         "hrms.leave.service",
         "hrms.leave.resource"
 }, excludeFilters = {

@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Performance Overview</title>
+    <link href="../../static/css/bootstrap.min.css" rel="stylesheet" th:href="@{/css/bootstrap.min.css}">
+    <link href="../../static/css/animate.css" rel="stylesheet" th:href="@{/css/animate.css}">
+    <link href="../../static/css/style.css" rel="stylesheet" th:href="@{/css/style.css}">
+    <link href="../../static/css/dashboard.css" rel="stylesheet" th:href="@{/css/dashboard.css}">
+</head>
+<body class="fixed-nav">
+<div id="wrapper">
+    <div th:replace="fragments/template :: side-menu"></div>
+    <div id="page-wrapper" class="gray-bg">
+        <div th:replace="fragments/template :: top-navbar"></div>
+        <div th:replace="fragments/template :: page-heading"></div>
+        <div th:replace="fragments/template :: alerts"></div>
+        <div class="wrapper wrapper-content animated fadeInRight">
+            <div class="row">
+                <div class="col-lg-3 col-sm-6">
+                    <div class="panel panel-primary metric-panel">
+                        <div class="panel-heading">Contracts</div>
+                        <div class="panel-body">
+                            <h3 class="no-margins" th:text="${analytics.contracts}">0</h3>
+                            <small>Total performance contracts</small>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-lg-3 col-sm-6">
+                    <div class="panel panel-success metric-panel">
+                        <div class="panel-heading">Perspectives</div>
+                        <div class="panel-body">
+                            <h3 class="no-margins" th:text="${#lists.size(perspectives)}">0</h3>
+                            <small>Organisation-wide perspectives</small>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-lg-3 col-sm-6">
+                    <div class="panel panel-info metric-panel">
+                        <div class="panel-heading">Strategic Goals</div>
+                        <div class="panel-body">
+                            <h3 class="no-margins" th:text="${#lists.size(strategicObjectives)}">0</h3>
+                            <small>Annual organisation goals</small>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-lg-3 col-sm-6">
+                    <div class="panel panel-warning metric-panel">
+                        <div class="panel-heading">Training Need Goals</div>
+                        <div class="panel-body">
+                            <h3 class="no-margins" th:text="${analytics.goalsWithTrainingNeeds}">0</h3>
+                            <small>Goals with learning needs</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="row">
+                <div class="col-lg-12">
+                    <div class="ibox">
+                        <div class="ibox-title">
+                            <h5>Performance Management</h5>
+                        </div>
+                        <div class="ibox-content">
+                            <p>Use the submenu under Performance to manage contracts, perspectives, and strategic goals as separate pages.</p>
+                            <div class="text-right">
+                                <a class="btn btn-success btn-sm" th:href="@{/performance/contracts}">Contracts</a>
+                                <a class="btn btn-primary btn-sm" th:href="@{/performance/perspectives}">Perspectives</a>
+                                <a class="btn btn-default btn-sm" th:href="@{/performance/strategic-goals}">Strategic Goals</a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div th:replace="fragments/template :: footer"></div>
+    </div>
+</div>
+</body>
+</html>

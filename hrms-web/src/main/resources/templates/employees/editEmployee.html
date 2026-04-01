@@ -7,6 +7,7 @@
     <link href="../../static/css/bootstrap.min.css" rel="stylesheet" th:href="@{/css/bootstrap.min.css}">
     <link href="../../static/css/animate.css" rel="stylesheet" th:href="@{/css/animate.css}">
     <link href="../../static/css/style.css" rel="stylesheet" th:href="@{/css/style.css}">
+    <link href="../../static/css/plugins/datapicker/datepicker3.css" rel="stylesheet" th:href="@{/css/plugins/datapicker/datepicker3.css}">
 </head>
 <body class="fixed-nav">
 <div id="wrapper">
@@ -43,17 +44,6 @@
         var jobTitle = document.getElementById('jobTitleId');
         var monthlySalary = document.getElementById('monthlySalary');
         var hourlyRate = document.getElementById('hourlyRate');
-        var qualificationRows = document.getElementById('qualificationRows');
-        var addQualification = document.getElementById('addQualification');
-        var dependentRows = document.getElementById('dependentRows');
-        var addDependent = document.getElementById('addDependent');
-        var disabilityRows = document.getElementById('disabilityRows');
-        var addDisability = document.getElementById('addDisability');
-        var relatedContactRows = document.getElementById('relatedContactRows');
-        var addRelatedContact = document.getElementById('addRelatedContact');
-        var educationLevels = /*[[${educationLevels}]]*/ [];
-        var institutions = /*[[${institutions}]]*/ [];
-        var relatedContactTypes = /*[[${relatedContactTypes}]]*/ [];
         if (!jobTitle || !monthlySalary || !hourlyRate) {
             return;
         }
@@ -64,184 +54,6 @@
         }
         jobTitle.addEventListener('change', syncCompensation);
         syncCompensation();
-
-        function buildOptions(items, selectedValue) {
-            var options = ['<option value="">Select</option>'];
-            items.forEach(function (item) {
-                var selected = String(selectedValue || '') === String(item.id) ? ' selected' : '';
-                options.push('<option value="' + item.id + '"' + selected + '>' + item.name + '</option>');
-            });
-            return options.join('');
-        }
-
-        function qualificationRow(index) {
-            return '' +
-                '<div class="border rounded p-3 mb-3 qualification-row">' +
-                '  <div class="row">' +
-                '    <div class="col-md-3 form-group">' +
-                '      <label>Education Level</label>' +
-                '      <select class="form-control" name="qualifications[' + index + '].educationLevelId">' +
-                         buildOptions(educationLevels) +
-                '      </select>' +
-                '    </div>' +
-                '    <div class="col-md-3 form-group">' +
-                '      <label>Institution</label>' +
-                '      <select class="form-control" name="qualifications[' + index + '].institutionId">' +
-                         buildOptions(institutions) +
-                '      </select>' +
-                '    </div>' +
-                '    <div class="col-md-3 form-group">' +
-                '      <label>Qualification</label>' +
-                '      <input class="form-control" name="qualifications[' + index + '].qualificationName">' +
-                '    </div>' +
-                '    <div class="col-md-3 form-group">' +
-                '      <label>Completion Year</label>' +
-                '      <input type="number" class="form-control" name="qualifications[' + index + '].completionYear">' +
-                '    </div>' +
-                '    <div class="col-md-10 form-group">' +
-                '      <label>Period Studied</label>' +
-                '      <input class="form-control" name="qualifications[' + index + '].periodStudied" placeholder="e.g. 2019 - 2022">' +
-                '    </div>' +
-                '    <div class="col-md-2 form-group d-flex align-items-end">' +
-                '      <button type="button" class="btn btn-danger btn-block remove-qualification">Remove</button>' +
-                '    </div>' +
-                '  </div>' +
-                '</div>';
-        }
-
-        function reindexQualificationRows() {
-            Array.prototype.slice.call(qualificationRows.querySelectorAll('.qualification-row')).forEach(function (row, index) {
-                Array.prototype.slice.call(row.querySelectorAll('select,input')).forEach(function (field) {
-                    field.name = field.name.replace(/qualifications\[\d+\]/, 'qualifications[' + index + ']');
-                });
-            });
-        }
-
-        function buildEnumOptions(items, selectedValue) {
-            var options = ['<option value="">Select</option>'];
-            items.forEach(function (item) {
-                var selected = String(selectedValue || '') === String(item) ? ' selected' : '';
-                options.push('<option value="' + item + '"' + selected + '>' + item + '</option>');
-            });
-            return options.join('');
-        }
-
-        function dependentRow(index) {
-            return '' +
-                '<div class="border rounded p-3 mb-3 dependent-row">' +
-                '  <div class="row">' +
-                '    <div class="col-md-4 form-group"><label>Full Name</label><input class="form-control" name="dependents[' + index + '].fullName"></div>' +
-                '    <div class="col-md-3 form-group"><label>Relationship</label><input class="form-control" name="dependents[' + index + '].relationship"></div>' +
-                '    <div class="col-md-3 form-group"><label>Date Of Birth</label><input type="date" class="form-control" name="dependents[' + index + '].dateOfBirth"></div>' +
-                '    <div class="col-md-2 form-group d-flex align-items-end"><button type="button" class="btn btn-danger btn-block remove-dependent">Remove</button></div>' +
-                '    <div class="col-md-12 form-group"><label>Notes</label><input class="form-control" name="dependents[' + index + '].notes"></div>' +
-                '  </div>' +
-                '</div>';
-        }
-
-        function disabilityRow(index) {
-            return '' +
-                '<div class="border rounded p-3 mb-3 disability-row">' +
-                '  <div class="row">' +
-                '    <div class="col-md-5 form-group"><label>Disability</label><input class="form-control" name="disabilities[' + index + '].disabilityName"></div>' +
-                '    <div class="col-md-5 form-group"><label>Notes</label><input class="form-control" name="disabilities[' + index + '].notes"></div>' +
-                '    <div class="col-md-2 form-group d-flex align-items-end"><button type="button" class="btn btn-danger btn-block remove-disability">Remove</button></div>' +
-                '  </div>' +
-                '</div>';
-        }
-
-        function relatedContactRow(index) {
-            return '' +
-                '<div class="border rounded p-3 mb-3 related-contact-row">' +
-                '  <div class="row">' +
-                '    <div class="col-md-3 form-group"><label>Type</label><select class="form-control" name="relatedContacts[' + index + '].contactType">' + buildEnumOptions(relatedContactTypes) + '</select></div>' +
-                '    <div class="col-md-3 form-group"><label>Full Name</label><input class="form-control" name="relatedContacts[' + index + '].fullName"></div>' +
-                '    <div class="col-md-3 form-group"><label>Relationship</label><input class="form-control" name="relatedContacts[' + index + '].relationshipDescription"></div>' +
-                '    <div class="col-md-3 form-group"><label>Phone</label><input class="form-control" name="relatedContacts[' + index + '].phoneNumber"></div>' +
-                '    <div class="col-md-4 form-group"><label>Email</label><input class="form-control" name="relatedContacts[' + index + '].emailAddress"></div>' +
-                '    <div class="col-md-6 form-group"><label>Address</label><input class="form-control" name="relatedContacts[' + index + '].address"></div>' +
-                '    <div class="col-md-2 form-group d-flex align-items-end"><button type="button" class="btn btn-danger btn-block remove-related-contact">Remove</button></div>' +
-                '  </div>' +
-                '</div>';
-        }
-
-        function reindexRows(container, selector, pattern, replacementPrefix) {
-            Array.prototype.slice.call(container.querySelectorAll(selector)).forEach(function (row, index) {
-                Array.prototype.slice.call(row.querySelectorAll('select,input')).forEach(function (field) {
-                    field.name = field.name.replace(pattern, replacementPrefix + '[' + index + ']');
-                });
-            });
-        }
-
-        qualificationRows.addEventListener('click', function (event) {
-            if (!event.target.classList.contains('remove-qualification')) {
-                return;
-            }
-            var rows = qualificationRows.querySelectorAll('.qualification-row');
-            if (rows.length === 1) {
-                rows[0].querySelectorAll('input').forEach(function (input) { input.value = ''; });
-                rows[0].querySelectorAll('select').forEach(function (select) { select.selectedIndex = 0; });
-                return;
-            }
-            event.target.closest('.qualification-row').remove();
-            reindexQualificationRows();
-        });
-
-        addQualification.addEventListener('click', function () {
-            qualificationRows.insertAdjacentHTML('beforeend', qualificationRow(qualificationRows.querySelectorAll('.qualification-row').length));
-        });
-
-        dependentRows.addEventListener('click', function (event) {
-            if (!event.target.classList.contains('remove-dependent')) {
-                return;
-            }
-            var rows = dependentRows.querySelectorAll('.dependent-row');
-            if (rows.length === 1) {
-                rows[0].querySelectorAll('input').forEach(function (input) { input.value = ''; });
-                return;
-            }
-            event.target.closest('.dependent-row').remove();
-            reindexRows(dependentRows, '.dependent-row', /dependents\[\d+\]/, 'dependents');
-        });
-
-        addDependent.addEventListener('click', function () {
-            dependentRows.insertAdjacentHTML('beforeend', dependentRow(dependentRows.querySelectorAll('.dependent-row').length));
-        });
-
-        disabilityRows.addEventListener('click', function (event) {
-            if (!event.target.classList.contains('remove-disability')) {
-                return;
-            }
-            var rows = disabilityRows.querySelectorAll('.disability-row');
-            if (rows.length === 1) {
-                rows[0].querySelectorAll('input').forEach(function (input) { input.value = ''; });
-                return;
-            }
-            event.target.closest('.disability-row').remove();
-            reindexRows(disabilityRows, '.disability-row', /disabilities\[\d+\]/, 'disabilities');
-        });
-
-        addDisability.addEventListener('click', function () {
-            disabilityRows.insertAdjacentHTML('beforeend', disabilityRow(disabilityRows.querySelectorAll('.disability-row').length));
-        });
-
-        relatedContactRows.addEventListener('click', function (event) {
-            if (!event.target.classList.contains('remove-related-contact')) {
-                return;
-            }
-            var rows = relatedContactRows.querySelectorAll('.related-contact-row');
-            if (rows.length === 1) {
-                rows[0].querySelectorAll('input').forEach(function (input) { input.value = ''; });
-                rows[0].querySelectorAll('select').forEach(function (select) { select.selectedIndex = 0; });
-                return;
-            }
-            event.target.closest('.related-contact-row').remove();
-            reindexRows(relatedContactRows, '.related-contact-row', /relatedContacts\[\d+\]/, 'relatedContacts');
-        });
-
-        addRelatedContact.addEventListener('click', function () {
-            relatedContactRows.insertAdjacentHTML('beforeend', relatedContactRow(relatedContactRows.querySelectorAll('.related-contact-row').length));
-        });
     }());
 </script>
 </body>

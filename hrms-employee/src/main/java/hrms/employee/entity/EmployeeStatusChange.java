@@ -18,7 +18,9 @@ import javax.persistence.Id;
 import javax.persistence.JoinColumn;
 import javax.persistence.ManyToOne;
 import javax.persistence.Table;
-import java.time.LocalDate;
+import javax.persistence.Temporal;
+import javax.persistence.TemporalType;
+import java.util.Date;
 
 @Getter
 @Setter
@@ -45,7 +47,8 @@ public class EmployeeStatusChange {
     private EmploymentStatus newStatus;
 
     @Column(nullable = false)
-    private LocalDate effectiveDate;
+    @Temporal(TemporalType.DATE)
+    private Date effectiveDate;
 
     @Column(nullable = false)
     private String eventType;

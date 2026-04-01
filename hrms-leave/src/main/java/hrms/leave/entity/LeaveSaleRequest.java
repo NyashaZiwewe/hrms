@@ -2,7 +2,6 @@ package hrms.leave.entity;
 
 import hrms.employee.entity.Employee;
 import hrms.leave.model.LeaveStatus;
-import hrms.leave.model.LeaveType;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
@@ -18,7 +17,9 @@ import javax.persistence.Id;
 import javax.persistence.JoinColumn;
 import javax.persistence.ManyToOne;
 import javax.persistence.Table;
-import java.time.LocalDate;
+import javax.persistence.Temporal;
+import javax.persistence.TemporalType;
+import java.util.Date;
 
 @Getter
 @Setter
@@ -35,15 +36,16 @@ public class LeaveSaleRequest {
     @JoinColumn(name = "employee_id", nullable = false)
     private Employee employee;
 
-    @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
+    @ManyToOne(fetch = FetchType.EAGER, optional = false)
+    @JoinColumn(name = "leave_type", referencedColumnName = "code", nullable = false)
     private LeaveType leaveType;
 
     @Column(nullable = false)
     private Integer daysToSell;
 
     @Column(nullable = false)
-    private LocalDate requestDate;
+    @Temporal(TemporalType.DATE)
+    private Date requestDate;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
@@ -56,7 +58,8 @@ public class LeaveSaleRequest {
     private Long decidedByManagerId;
 
     @Column
-    private LocalDate decisionDate;
+    @Temporal(TemporalType.DATE)
+    private Date decisionDate;
 
     @Column(nullable = false)
     private boolean payrollProcessed = false;
